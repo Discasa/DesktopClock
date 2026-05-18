@@ -1,10 +1,32 @@
 # Desktop Clock
 
+<p align="center">
+  <img src="Assets/Icons/app-dark.png" alt="Desktop Clock icon" width="96" height="96">
+</p>
+
 Desktop Clock is a native Windows desktop overlay clock written in C# and WPF.
 
 It renders a transparent, click-through clock on the desktop and includes a live
 editor for positioning, layout, per-digit typography, outline mode, opacity, and
 startup behavior.
+
+## Screenshots
+
+### Vertical Desktop Layout
+
+![Desktop Clock vertical layout](Assets/Screenshots/desktop-clock-vertical.png)
+
+### Horizontal Layout With Separators
+
+![Desktop Clock horizontal layout](Assets/Screenshots/desktop-clock-horizontal.png)
+
+### Mixed Filled And Outline Items
+
+![Desktop Clock mixed outline layout](Assets/Screenshots/desktop-clock-outline-mixed.png)
+
+### Low Opacity Outline Mode
+
+![Desktop Clock low opacity outline layout](Assets/Screenshots/desktop-clock-ghost.png)
 
 ## Download
 
