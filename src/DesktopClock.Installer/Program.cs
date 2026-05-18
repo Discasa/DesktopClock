@@ -42,7 +42,7 @@ internal sealed class InstallerForm : Form
     private const string UninstallerName = "Desktop Clock Uninstaller.exe";
     private const string AppIconName = "Desktop Clock.ico";
     private const string ConfigName = "desktop-image-clock.json";
-    private const string AppVersion = "1.0.0";
+    private const string AppVersion = "1.0.1";
     private const string Publisher = "anderson";
     private const string UninstallRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\Desktop Clock";
     private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -434,7 +434,7 @@ internal sealed class InstallerForm : Form
         key.SetValue("DisplayVersion", AppVersion);
         key.SetValue("Publisher", Publisher);
         key.SetValue("InstallLocation", installDir);
-        key.SetValue("DisplayIcon", File.Exists(appIcon) ? appIcon : $"{appExe},0");
+        key.SetValue("DisplayIcon", $"\"{appExe}\",0");
         key.SetValue("UninstallString", $"\"{uninstallerExe}\"");
         key.SetValue("InstallDate", DateTime.Now.ToString("yyyyMMdd"));
         key.SetValue("NoModify", 1, RegistryValueKind.DWord);

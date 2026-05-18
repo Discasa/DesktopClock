@@ -5,10 +5,10 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <AssemblyName>Desktop Clock</AssemblyName>
     <RootNamespace>DesktopClock</RootNamespace>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <InformationalVersion>1.0.1</InformationalVersion>
     <Product>Desktop Clock</Product>
     <Authors>anderson</Authors>
     <ApplicationIcon>Assets\Icons\app-dark.ico</ApplicationIcon>
