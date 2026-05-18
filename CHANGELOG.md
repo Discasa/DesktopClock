@@ -5,6 +5,7 @@
 - Fixed editor checkbox rows so options such as "Start with Windows" can be selected reliably.
 - Increased the checkbox hit area and made the row label clickable.
 - Added a clearer theme-aware checkbox visual state for dark and light mode.
+- Added retry handling for transient preview config read/write races while editing.
 
 ## 1.0.1 - 2026-05-18
 
