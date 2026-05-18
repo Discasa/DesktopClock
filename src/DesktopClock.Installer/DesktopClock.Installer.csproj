@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Desktop Clock Installer</AssemblyName>
+    <RootNamespace>DesktopClock.Installer</RootNamespace>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <Product>Desktop Clock Installer</Product>
+    <Authors>anderson</Authors>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\SetupUi\SetupControls.cs" Link="SetupControls.cs" />
+    <Compile Include="..\SetupUi\SetupStrings.cs" Link="SetupStrings.cs" />
+    <EmbeddedResource Include="Payload\*">
+      <LogicalName>Payload.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+    <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

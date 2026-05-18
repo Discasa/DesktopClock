@@ -1,0 +1,192 @@
+{
+  "CENTER_X": 960,
+  "CENTER_Y": 340,
+  "SCREEN_INDEX": 0,
+  "SHOW_SECONDS": true,
+  "SHOW_SEPARATORS": false,
+  "LAYOUT_MODE": "vertical",
+  "HOUR_MODE": "12h",
+  "HOUR_FORMAT": "%I",
+  "DIGIT_WIDTH": 56,
+  "DIGIT_HEIGHT": 80,
+  "SEPARATOR_WIDTH": 34,
+  "SEPARATOR_HEIGHT": 112,
+  "DIGIT_SPACING": 2,
+  "SEPARATOR_SPACING": 10,
+  "GROUP_SPACING": 18,
+  "VERTICAL_GROUP_SPACING": 6,
+  "VERTICAL_COLUMN_WIDTH": 114,
+  "VERTICAL_ALIGN": "center",
+  "VERTICAL_GROUP_ALIGNMENTS": {
+    "hour": "center",
+    "minute": "center",
+    "second": "center"
+  },
+  "VERTICAL_GROUP_OFFSETS_X": {
+    "hour": 0,
+    "minute": 0,
+    "second": 0
+  },
+  "FONT_FAMILY": "Segoe UI",
+  "FONT_FALLBACK_FAMILY": "Segoe UI",
+  "FONT_COLOR": "#C1C1C1",
+  "FONT_BOLD": false,
+  "FONT_ITALIC": false,
+  "FONT_RENDER_MODE": "filled",
+  "FONT_OUTLINE_WIDTH": 1,
+  "FONT_PADDING_X": 0,
+  "FONT_PADDING_Y": 0,
+  "FONT_OFFSET_X": 0,
+  "FONT_OFFSET_Y": 0,
+  "FONT_COLON_CHARACTER": ":",
+  "FONT_PIXEL_SIZE": 60,
+  "SLOT_FONT_PIXEL_SIZES": {
+    "hour_tens": 138,
+    "hour_ones": 138,
+    "minute_tens": 138,
+    "minute_ones": 138,
+    "second_tens": 138,
+    "second_ones": 138,
+    "separator_1": 138,
+    "separator_2": 138
+  },
+  "SLOT_FONT_FAMILIES": {
+    "hour_tens": "Segoe UI Black",
+    "hour_ones": "Segoe UI Black",
+    "minute_tens": "Segoe UI Black",
+    "minute_ones": "Segoe UI Black",
+    "second_tens": "Segoe UI Black",
+    "second_ones": "Segoe UI Black",
+    "separator_1": "Segoe UI Black",
+    "separator_2": "Segoe UI Black"
+  },
+  "SLOT_FONT_COLORS": {
+    "hour_tens": "#C1C1C1",
+    "hour_ones": "#C1C1C1",
+    "minute_tens": "#C1C1C1",
+    "minute_ones": "#C1C1C1",
+    "second_tens": "#C1C1C1",
+    "second_ones": "#C1C1C1",
+    "separator_1": "#C1C1C1",
+    "separator_2": "#C1C1C1"
+  },
+  "SLOT_RENDER_MODES": {
+    "hour_tens": "filled",
+    "hour_ones": "filled",
+    "separator_1": "filled",
+    "minute_tens": "filled",
+    "minute_ones": "filled",
+    "separator_2": "filled",
+    "second_tens": "filled",
+    "second_ones": "filled"
+  },
+  "SLOT_OPACITIES": {
+    "hour_tens": 1,
+    "hour_ones": 1,
+    "separator_1": 1,
+    "minute_tens": 1,
+    "minute_ones": 1,
+    "separator_2": 1,
+    "second_tens": 1,
+    "second_ones": 1
+  },
+  "SLOT_WIDTHS": {
+    "hour_tens": 127,
+    "hour_ones": 127,
+    "separator_1": 91,
+    "minute_tens": 127,
+    "minute_ones": 127,
+    "separator_2": 91,
+    "second_tens": 127,
+    "second_ones": 127
+  },
+  "SLOT_HEIGHTS": {
+    "hour_tens": 152,
+    "hour_ones": 152,
+    "separator_1": 156,
+    "minute_tens": 152,
+    "minute_ones": 152,
+    "separator_2": 156,
+    "second_tens": 152,
+    "second_ones": 152
+  },
+  "SLOT_TEXT_OFFSETS": {
+    "hour_tens": {
+      "x": 0,
+      "y": 0
+    },
+    "hour_ones": {
+      "x": 0,
+      "y": 0
+    },
+    "minute_tens": {
+      "x": 0,
+      "y": 0
+    },
+    "minute_ones": {
+      "x": 0,
+      "y": 0
+    },
+    "second_tens": {
+      "x": 0,
+      "y": 0
+    },
+    "second_ones": {
+      "x": 0,
+      "y": 0
+    },
+    "separator_1": {
+      "x": 0,
+      "y": 0
+    },
+    "separator_2": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  "SLOT_POSITION_OFFSETS": {
+    "hour_tens": {
+      "x": 0,
+      "y": 0
+    },
+    "hour_ones": {
+      "x": 0,
+      "y": 0
+    },
+    "minute_tens": {
+      "x": 0,
+      "y": 0
+    },
+    "minute_ones": {
+      "x": 0,
+      "y": 0
+    },
+    "second_tens": {
+      "x": 0,
+      "y": 0
+    },
+    "second_ones": {
+      "x": 0,
+      "y": 0
+    },
+    "separator_1": {
+      "x": 0,
+      "y": 0
+    },
+    "separator_2": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  "ANIMATION_DURATION_MS": 130,
+  "ANIMATION_EASING": "InOutQuad",
+  "UPDATE_INTERVAL_MS": 1000,
+  "WINDOW_OPACITY": 1,
+  "CLICK_THROUGH": true,
+  "ALWAYS_ON_TOP": false,
+  "ALWAYS_ON_BOTTOM": true,
+  "SHOW_IN_TASKBAR": false,
+  "START_WITH_WINDOWS": false,
+  "WINDOWS_STARTUP_NAME": "Desktop Clock",
+  "CONFIG_RELOAD_INTERVAL_MS": 250
+}

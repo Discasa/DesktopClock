@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="DesktopClock.csproj" />
+    <Project Path="src/DesktopClock.Installer/DesktopClock.Installer.csproj" />
+    <Project Path="src/DesktopClock.Uninstaller/DesktopClock.Uninstaller.csproj" />
+  </Folder>
+</Solution>

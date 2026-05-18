@@ -1,0 +1,10 @@
+bin/
+obj/
+release/
+src/DesktopClock.Installer/Payload/
+*.log
+*.tmp
+*.user
+.desktop-image-clock.preview.json
+qa-*.png
+legacy-python/
