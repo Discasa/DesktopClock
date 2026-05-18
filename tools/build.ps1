@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$version = '1.0.1'
+$version = '1.0.2'
 $release = Join-Path $root 'release'
 $payload = Join-Path $release 'payload'
 $installerPayload = Join-Path $root 'src\DesktopClock.Installer\Payload'

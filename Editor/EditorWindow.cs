@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -15,6 +16,7 @@ using MediaBrushes = System.Windows.Media.Brushes;
 using TabControl = System.Windows.Controls.TabControl;
 using TextBlock = System.Windows.Controls.TextBlock;
 using TextBox = System.Windows.Controls.TextBox;
+using WpfCursors = System.Windows.Input.Cursors;
 using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
 
 namespace DesktopClock.Editor;
@@ -365,6 +367,11 @@ public sealed class EditorWindow : Window
         Grid.SetColumn(control, 1);
         grid.Children.Add(control);
 
+        if (control is CheckBox check)
+        {
+            ConfigureCheckRow(grid, labelBlock, check, label);
+        }
+
         if (all is not null)
         {
             Grid.SetColumn(all, 2);
@@ -372,6 +379,45 @@ public sealed class EditorWindow : Window
         }
 
         return grid;
+    }
+
+    private static void ConfigureCheckRow(Grid grid, TextBlock labelBlock, CheckBox check, string label)
+    {
+        grid.MinHeight = 32;
+        grid.Cursor = WpfCursors.Hand;
+        labelBlock.Cursor = WpfCursors.Hand;
+        check.MinWidth = 26;
+        check.MinHeight = 26;
+        check.HorizontalAlignment = WpfHorizontalAlignment.Left;
+        check.VerticalAlignment = VerticalAlignment.Center;
+        check.ToolTip = label;
+        AutomationProperties.SetName(check, label);
+
+        grid.MouseLeftButtonUp += (sender, e) =>
+        {
+            if (IsDescendantOf(e.OriginalSource as DependencyObject, check))
+            {
+                return;
+            }
+
+            check.IsChecked = check.IsChecked != true;
+            e.Handled = true;
+        };
+    }
+
+    private static bool IsDescendantOf(DependencyObject? source, DependencyObject target)
+    {
+        while (source is not null)
+        {
+            if (ReferenceEquals(source, target))
+            {
+                return true;
+            }
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     private TextBox CreateTextBox(string value, Action<string> callback, int maxLength = 0)
@@ -430,7 +476,12 @@ public sealed class EditorWindow : Window
 
     private CheckBox CreateCheck(bool value, Action<bool> callback)
     {
-        var check = new CheckBox { IsChecked = value, VerticalAlignment = VerticalAlignment.Center };
+        var check = new CheckBox
+        {
+            IsChecked = value,
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = WpfHorizontalAlignment.Left,
+        };
         check.Checked += (_, _) =>
         {
             if (!_loading)
