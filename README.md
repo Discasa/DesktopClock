@@ -1,73 +1,48 @@
 # Desktop Clock
 
 <p align="center">
-  <img src="Assets/Icons/app-dark.png" alt="Desktop Clock icon" width="96" height="96">
+  <img src="Assets/Icons/app-light.png" alt="Desktop Clock icon" width="112" height="112">
 </p>
 
-Desktop Clock is a native Windows desktop overlay clock written in C# and WPF.
+<p align="center">
+  <strong>A clean, customizable clock for your Windows desktop.</strong>
+</p>
 
-It renders a transparent, click-through clock on the desktop and includes a live
-editor for positioning, layout, per-digit typography, outline mode, opacity, and
-startup behavior.
+<p align="center">
+  Put the time directly on your wallpaper, tune every number, and keep your desktop looking exactly the way you want.
+</p>
 
-## Screenshots
+<p align="center">
+  <a href="https://github.com/Discasa/DesktopClock/releases/latest/download/Desktop.Clock.Installer.exe"><strong>Download Now</strong></a>
+</p>
 
-### Vertical Desktop Layout
+## Looks
 
-![Desktop Clock vertical layout](Assets/Screenshots/desktop-clock-vertical.png)
+<table>
+  <tr>
+    <td width="50%"><img src="Assets/Screenshots/desktop-clock-vertical.png" alt="Vertical desktop clock"></td>
+    <td width="50%"><img src="Assets/Screenshots/desktop-clock-horizontal.png" alt="Horizontal desktop clock"></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="Assets/Screenshots/desktop-clock-outline-mixed.png" alt="Mixed outline desktop clock"></td>
+    <td width="50%"><img src="Assets/Screenshots/desktop-clock-ghost.png" alt="Low opacity desktop clock"></td>
+  </tr>
+</table>
 
-### Horizontal Layout With Separators
+## Why Use It
 
-![Desktop Clock horizontal layout](Assets/Screenshots/desktop-clock-horizontal.png)
+- Lives on your desktop without getting in the way.
+- Click-through overlay, perfect for daily use.
+- Horizontal, vertical, filled, outline, and transparent styles.
+- Per-number font, size, opacity, color, position, and outline control.
+- Simple editor with live preview.
+- Follows Windows light and dark theme.
+- Installs for your user and updates automatically.
 
-### Mixed Filled And Outline Items
+## Get It
 
-![Desktop Clock mixed outline layout](Assets/Screenshots/desktop-clock-outline-mixed.png)
+Download the latest version:
 
-### Low Opacity Outline Mode
+[Desktop Clock Installer](https://github.com/Discasa/DesktopClock/releases/latest/download/Desktop.Clock.Installer.exe)
 
-![Desktop Clock low opacity outline layout](Assets/Screenshots/desktop-clock-ghost.png)
-
-## Download
-
-Get the latest installer here:
-
-[Download Desktop Clock Installer](https://github.com/Discasa/DesktopClock/releases/latest/download/Desktop.Clock.Installer.exe)
-
-All releases are available on the
-[GitHub Releases page](https://github.com/Discasa/DesktopClock/releases).
-
-## Features
-
-- Transparent WPF desktop overlay.
-- Horizontal or vertical time layout.
-- Optional seconds and separators.
-- Per-item font, size, color, render mode, opacity, box size, and offsets.
-- Per-item outline, filled, or filled-outline text rendering.
-- Live editor preview.
-- Windows light/dark theme-aware editor.
-- Per-user installer and uninstaller.
-- Automatic updates through GitHub Releases.
-
-## Local Build
-
-```powershell
-dotnet build .\DesktopClock.slnx -c Release
-```
-
-Build the release installer and update package:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build.ps1
-```
-
-The release assets are written to `release/`.
-
-## Launchers
-
-For source-tree runs:
-
-- `clock.bat` starts the overlay clock.
-- `editor.bat` starts the editor.
-
-The installer creates Start Menu shortcuts for both the clock and the editor.
+Need an older version? Check the [Releases page](https://github.com/Discasa/DesktopClock/releases).
