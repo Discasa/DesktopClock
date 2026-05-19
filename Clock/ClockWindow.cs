@@ -37,6 +37,7 @@ public sealed class ClockWindow : Window
     private DateTime? _configMtime;
     private IntPtr _hwnd;
     private bool _hiddenByEditor;
+    private bool _attachedToWallpaperLayer;
 
     public ClockWindow(string configPath, bool previewMode)
     {
@@ -682,6 +683,21 @@ public sealed class ClockWindow : Window
         if (_hwnd == IntPtr.Zero)
         {
             return;
+        }
+
+        if (!_previewMode && !_config.ALWAYS_ON_TOP && _config.ALWAYS_ON_BOTTOM)
+        {
+            _attachedToWallpaperLayer = DesktopLayerService.AttachToWallpaperLayer(_hwnd);
+            if (_attachedToWallpaperLayer)
+            {
+                return;
+            }
+        }
+
+        if (_attachedToWallpaperLayer)
+        {
+            DesktopLayerService.DetachFromWallpaperLayer(_hwnd);
+            _attachedToWallpaperLayer = false;
         }
 
         var insertAfter = _config.ALWAYS_ON_TOP

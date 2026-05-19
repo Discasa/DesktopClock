@@ -52,6 +52,11 @@ the current Windows UI language.
 The `Todos` checkbox beside each item setting applies the selected item's value
 to every slot.
 
+When `Sempre abaixo` / `Always on bottom` is enabled, the normal clock is
+attached to the Explorer wallpaper layer. This keeps the clock above the
+wallpaper but below desktop icons and their selection rectangle. The editor
+preview is not attached to that layer so it remains visible while editing.
+
 Removed editor clutter:
 
 - Console mode, because the app is a WPF `WinExe`.

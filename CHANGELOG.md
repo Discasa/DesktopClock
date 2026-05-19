@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.5 - 2026-05-19
+
+- Moved the normal clock window to the Explorer wallpaper layer when it is set
+  to stay below other windows, keeping desktop icon selection rectangles above
+  the clock.
+- Kept the editor preview as a normal preview window so editing remains visible.
+
 ## 1.0.4 - 2026-05-19
 
 - Removed global opacity and kept opacity as a per-item setting.

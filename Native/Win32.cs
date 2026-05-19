@@ -4,7 +4,10 @@ namespace DesktopClock.Native;
 
 public static class Win32
 {
+    public const int GWL_STYLE = -16;
     public const int GWL_EXSTYLE = -20;
+    public const long WS_CHILD = 0x40000000L;
+    public const long WS_POPUP = unchecked((long)0x80000000);
     public const long WS_EX_LAYERED = 0x00080000L;
     public const long WS_EX_TRANSPARENT = 0x00000020L;
     public const long WS_EX_TOOLWINDOW = 0x00000080L;
@@ -15,6 +18,8 @@ public static class Win32
     public const uint SWP_NOACTIVATE = 0x0010;
     public const uint SWP_FRAMECHANGED = 0x0020;
     public const uint SWP_SHOWWINDOW = 0x0040;
+    public const uint SMTO_NORMAL = 0x0000;
+    public const uint WM_SPAWN_WORKER = 0x052C;
     public const int SW_HIDE = 0;
     public const int SW_SHOWNA = 8;
 
@@ -55,4 +60,26 @@ public static class Win32
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool ShowWindow(IntPtr hwnd, int command);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr SetParent(IntPtr child, IntPtr newParent);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr GetParent(IntPtr hwnd);
+
+    [DllImport("user32.dll", EntryPoint = "FindWindowW", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern IntPtr FindWindow(string? className, string? windowName);
+
+    [DllImport("user32.dll", EntryPoint = "FindWindowExW", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr childAfter, string? className, string? windowName);
+
+    [DllImport("user32.dll", EntryPoint = "SendMessageTimeoutW", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern IntPtr SendMessageTimeout(
+        IntPtr hwnd,
+        uint msg,
+        UIntPtr wParam,
+        IntPtr lParam,
+        uint flags,
+        uint timeout,
+        out UIntPtr result);
 }
