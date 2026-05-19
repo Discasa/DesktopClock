@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.6 - 2026-05-19
+
+- Fixed a regression where the clock could disappear by attaching to `Progman`
+  on Explorer configurations that do not expose a usable wallpaper `WorkerW`.
+- The clock now only uses the wallpaper layer when a real `WorkerW` target is
+  available; otherwise it falls back to the previous visible bottom-window mode.
+
 ## 1.0.5 - 2026-05-19
 
 - Moved the normal clock window to the Explorer wallpaper layer when it is set

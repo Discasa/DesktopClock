@@ -90,6 +90,6 @@ public static class DesktopLayerService
             }
         }
 
-        return progman;
+        return IntPtr.Zero;
     }
 }
