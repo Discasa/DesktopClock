@@ -5,7 +5,7 @@ namespace DesktopClock.Models;
 public sealed class ClockConfig
 {
     public int CENTER_X { get; set; } = 960;
-    public int CENTER_Y { get; set; } = 340;
+    public int CENTER_Y { get; set; } = 500;
     public int SCREEN_INDEX { get; set; } = 0;
     public bool SHOW_SECONDS { get; set; } = true;
     public bool SHOW_SEPARATORS { get; set; } = false;
@@ -43,8 +43,11 @@ public sealed class ClockConfig
     public Dictionary<string, int> SLOT_FONT_PIXEL_SIZES { get; set; } = new();
     public Dictionary<string, string> SLOT_FONT_FAMILIES { get; set; } = new();
     public Dictionary<string, string> SLOT_FONT_COLORS { get; set; } = new();
+    public Dictionary<string, bool> SLOT_FONT_BOLD { get; set; } = new();
+    public Dictionary<string, bool> SLOT_FONT_ITALIC { get; set; } = new();
     public Dictionary<string, string> SLOT_RENDER_MODES { get; set; } = new();
     public Dictionary<string, double> SLOT_OPACITIES { get; set; } = new();
+    public Dictionary<string, int> SLOT_ANIMATION_DURATIONS_MS { get; set; } = new();
     public Dictionary<string, int> SLOT_WIDTHS { get; set; } = new();
     public Dictionary<string, int> SLOT_HEIGHTS { get; set; } = new();
     public Dictionary<string, PointOffset> SLOT_TEXT_OFFSETS { get; set; } = new();
@@ -102,7 +105,7 @@ public sealed class ClockConfig
         var config = new ClockConfig
         {
             CENTER_X = 960,
-            CENTER_Y = 340,
+            CENTER_Y = 500,
             SCREEN_INDEX = 0,
             SHOW_SECONDS = true,
             SHOW_SEPARATORS = false,
@@ -145,8 +148,11 @@ public sealed class ClockConfig
             config.SLOT_FONT_PIXEL_SIZES[slotId] = 138;
             config.SLOT_FONT_FAMILIES[slotId] = "Segoe UI Black";
             config.SLOT_FONT_COLORS[slotId] = "#C1C1C1";
+            config.SLOT_FONT_BOLD[slotId] = false;
+            config.SLOT_FONT_ITALIC[slotId] = false;
             config.SLOT_RENDER_MODES[slotId] = "filled";
             config.SLOT_OPACITIES[slotId] = 1.0;
+            config.SLOT_ANIMATION_DURATIONS_MS[slotId] = 130;
             config.SLOT_WIDTHS[slotId] = isSeparator ? 91 : 127;
             config.SLOT_HEIGHTS[slotId] = isSeparator ? 156 : 152;
             config.SLOT_TEXT_OFFSETS[slotId] = new PointOffset();

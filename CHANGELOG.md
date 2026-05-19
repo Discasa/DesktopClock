@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3 - 2026-05-19
+
+- Made the editor dark theme more consistent across item labels, sliders, and themed controls.
+- Replaced opacity text boxes with 0-100% sliders.
+- Moved bold, italic, and animation duration to per-item settings.
+- Changed the default `CENTER_Y` / `Centro Y` value to `500`.
+
 ## 1.0.2 - 2026-05-18
 
 - Fixed editor checkbox rows so options such as "Start with Windows" can be selected reliably.

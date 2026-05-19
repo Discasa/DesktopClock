@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -16,7 +17,9 @@ using WpfLabel = System.Windows.Controls.Label;
 using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfPanel = System.Windows.Controls.Panel;
 using WpfPath = System.Windows.Shapes.Path;
+using WpfScrollBar = System.Windows.Controls.Primitives.ScrollBar;
 using WpfShape = System.Windows.Shapes.Shape;
+using WpfSlider = System.Windows.Controls.Slider;
 using WpfTabControl = System.Windows.Controls.TabControl;
 using WpfTextBox = System.Windows.Controls.TextBox;
 using MediaBrush = System.Windows.Media.Brush;
@@ -121,16 +124,34 @@ public static class ThemeService
 
     public static void ApplyControlTree(DependencyObject root, ThemePalette palette)
     {
+        ApplyControlTree(root, palette, new HashSet<DependencyObject>());
+    }
+
+    private static void ApplyControlTree(DependencyObject root, ThemePalette palette, HashSet<DependencyObject> visited)
+    {
         var windowBrush = new SolidColorBrush(palette.Window);
         var panelBrush = new SolidColorBrush(palette.Panel);
         var textBrush = new SolidColorBrush(palette.Text);
         var mutedBrush = new SolidColorBrush(palette.MutedText);
         var borderBrush = new SolidColorBrush(palette.Border);
 
-        ApplyControl(root, windowBrush, panelBrush, textBrush, mutedBrush, borderBrush, palette);
-        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        if (!visited.Add(root))
         {
-            ApplyControlTree(VisualTreeHelper.GetChild(root, index), palette);
+            return;
+        }
+
+        ApplyControl(root, windowBrush, panelBrush, textBrush, mutedBrush, borderBrush, palette);
+        if (root is Visual or System.Windows.Media.Media3D.Visual3D)
+        {
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+            {
+                ApplyControlTree(VisualTreeHelper.GetChild(root, index), palette, visited);
+            }
+        }
+
+        foreach (var child in LogicalTreeHelper.GetChildren(root).OfType<DependencyObject>())
+        {
+            ApplyControlTree(child, palette, visited);
         }
     }
 
@@ -152,6 +173,7 @@ public static class ThemeService
                 break;
             case ScrollViewer scrollViewer:
                 scrollViewer.Background = windowBrush;
+                scrollViewer.Resources[typeof(WpfScrollBar)] = CreateScrollBarStyle(palette);
                 break;
             case WpfPanel panel:
                 panel.Background ??= windowBrush;
@@ -188,6 +210,14 @@ public static class ThemeService
                 checkBox.Foreground = textBrush;
                 checkBox.Background = windowBrush;
                 checkBox.Style = CreateCheckBoxStyle(palette);
+                break;
+            case WpfSlider slider:
+                slider.Foreground = new SolidColorBrush(palette.Accent);
+                slider.Background = panelBrush;
+                slider.BorderBrush = borderBrush;
+                break;
+            case WpfScrollBar scrollBar:
+                scrollBar.Style = CreateScrollBarStyle(palette);
                 break;
             case WpfTabControl tabControl:
                 tabControl.Background = windowBrush;
@@ -303,6 +333,57 @@ public static class ThemeService
             (byte)(from.R + ((to.R - from.R) * amount)),
             (byte)(from.G + ((to.G - from.G) * amount)),
             (byte)(from.B + ((to.B - from.B) * amount)));
+    }
+
+    private static Style CreateScrollBarStyle(ThemePalette palette)
+    {
+        var panel = ToHex(palette.Panel);
+        var border = ToHex(palette.Border);
+        var thumb = ToHex(Blend(palette.Panel, palette.Text, palette.LightTheme ? 0.28 : 0.22));
+        var hover = ToHex(Blend(palette.Panel, palette.Text, palette.LightTheme ? 0.38 : 0.34));
+        var xaml =
+            $$"""
+            <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   TargetType="{x:Type ScrollBar}">
+              <Setter Property="Width" Value="14"/>
+              <Setter Property="MinWidth" Value="14"/>
+              <Setter Property="Background" Value="{{panel}}"/>
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="{x:Type ScrollBar}">
+                    <Border Background="{{panel}}" BorderBrush="{{border}}" BorderThickness="1,0,0,0">
+                      <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <Track.Thumb>
+                          <Thumb MinHeight="28" Background="{{thumb}}">
+                            <Thumb.Template>
+                              <ControlTemplate TargetType="{x:Type Thumb}">
+                                <Border x:Name="ThumbBorder"
+                                        Margin="2"
+                                        CornerRadius="2"
+                                        Background="{TemplateBinding Background}"/>
+                                <ControlTemplate.Triggers>
+                                  <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ThumbBorder" Property="Background" Value="{{hover}}"/>
+                                  </Trigger>
+                                </ControlTemplate.Triggers>
+                              </ControlTemplate>
+                            </Thumb.Template>
+                          </Thumb>
+                        </Track.Thumb>
+                      </Track>
+                    </Border>
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+            </Style>
+            """;
+        return (Style)XamlReader.Parse(xaml);
+    }
+
+    private static string ToHex(MediaColor color)
+    {
+        return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
     }
 
     [DllImport("dwmapi.dll")]

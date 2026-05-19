@@ -34,7 +34,7 @@
 - Lives on your desktop without getting in the way.
 - Click-through overlay, perfect for daily use.
 - Horizontal, vertical, filled, outline, and transparent styles.
-- Per-number font, size, opacity, color, position, and outline control.
+- Per-number font, size, opacity, color, position, outline, bold, italic, and animation control.
 - Simple editor with live preview.
 - Follows Windows light and dark theme.
 - Installs for your user and updates automatically.

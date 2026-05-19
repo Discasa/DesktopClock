@@ -26,7 +26,8 @@ format:
 - Segoe UI family defaults.
 - Segoe UI Black per digit.
 - Light gray digit color.
-- Per-item render mode and opacity.
+- Per-item render mode, opacity, bold, italic, and animation duration.
+- Default `Centro Y` / `CENTER_Y` value is `500`.
 
 The old adaptive wallpaper color and background inversion settings were removed.
 
@@ -34,9 +35,13 @@ The old adaptive wallpaper color and background inversion settings were removed.
 
 The editor has two tabs:
 
-- `Geral`: position, time layout, spacing, animation, and window behavior.
-- `Item`: per-slot font, size, color, render mode, opacity, width, height, text
-  offset, and position offset.
+- `Geral`: position, time layout, shared spacing, shared animation curve, update
+  interval, shared outline/padding/offset values, and window behavior.
+- `Item`: per-slot font, size, bold, italic, color, render mode, opacity,
+  animation duration, width, height, text offset, and position offset.
+
+Opacity controls are shown as 0-100% sliders. Internally they are stored as
+normalized `0.0` to `1.0` values in the JSON.
 
 The `Todos` checkbox beside each item setting applies the selected item's value
 to every slot.
@@ -46,6 +51,8 @@ Removed editor clutter:
 - Console mode, because the app is a WPF `WinExe`.
 - Global font family, color, size, and render mode controls, because every item
   already has explicit per-slot controls.
+- Global bold, italic, and animation duration controls, because these are now
+  configured per item.
 - Adaptive/invert color controls, because that feature was intentionally removed.
 
 ## Installer

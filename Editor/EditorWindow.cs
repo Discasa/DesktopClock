@@ -13,6 +13,7 @@ using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
 using ComboBox = System.Windows.Controls.ComboBox;
 using MediaBrushes = System.Windows.Media.Brushes;
+using Slider = System.Windows.Controls.Slider;
 using TabControl = System.Windows.Controls.TabControl;
 using TextBlock = System.Windows.Controls.TextBlock;
 using TextBox = System.Windows.Controls.TextBox;
@@ -52,17 +53,15 @@ public sealed class EditorWindow : Window
     private TextBox _verticalSpacing = null!;
     private TextBox _columnWidth = null!;
     private ComboBox _verticalAlign = null!;
-    private TextBox _animationDuration = null!;
     private ComboBox _animationEasing = null!;
     private TextBox _updateInterval = null!;
-    private CheckBox _fontBold = null!;
-    private CheckBox _fontItalic = null!;
     private TextBox _fontOutlineWidth = null!;
     private TextBox _fontPaddingX = null!;
     private TextBox _fontPaddingY = null!;
     private TextBox _fontOffsetX = null!;
     private TextBox _fontOffsetY = null!;
-    private TextBox _windowOpacity = null!;
+    private Slider _windowOpacity = null!;
+    private TextBlock _windowOpacityValue = null!;
     private CheckBox _clickThrough = null!;
     private CheckBox _alwaysOnTop = null!;
     private CheckBox _alwaysOnBottom = null!;
@@ -72,9 +71,13 @@ public sealed class EditorWindow : Window
     private TextBlock _selectedLabel = null!;
     private ComboBox _slotFont = null!;
     private TextBox _slotSize = null!;
+    private CheckBox _slotBold = null!;
+    private CheckBox _slotItalic = null!;
     private Button _slotColor = null!;
     private ComboBox _slotRenderMode = null!;
-    private TextBox _slotOpacity = null!;
+    private Slider _slotOpacity = null!;
+    private TextBlock _slotOpacityValue = null!;
+    private TextBox _slotAnimationDuration = null!;
     private TextBox _slotWidth = null!;
     private TextBox _slotHeight = null!;
     private TextBox _slotTextX = null!;
@@ -129,6 +132,7 @@ public sealed class EditorWindow : Window
         root.Children.Add(footer);
 
         var tabs = new TabControl();
+        tabs.SelectionChanged += (_, _) => Dispatcher.BeginInvoke(ApplyTheme);
         root.Children.Add(tabs);
 
         var generalPanel = new StackPanel();
@@ -225,38 +229,32 @@ public sealed class EditorWindow : Window
         AddRow(panel, "Largura coluna", _columnWidth);
         AddRow(panel, "Alinh. coluna", _verticalAlign);
 
-        _animationDuration = CreateIntBox(_config.ANIMATION_DURATION_MS, v => SetConfig(() => _config.ANIMATION_DURATION_MS = v));
         _animationEasing = CreateCombo(["InOutQuad", "Linear", "OutCubic", "InCubic", "OutBack"], _config.ANIMATION_EASING, v => SetConfig(() => _config.ANIMATION_EASING = v));
         _updateInterval = CreateIntBox(_config.UPDATE_INTERVAL_MS, v => SetConfig(() => _config.UPDATE_INTERVAL_MS = v));
         AddSection(panel, "Transicao");
-        AddRow(panel, "Animacao ms", _animationDuration);
         AddRow(panel, "Animacao curva", _animationEasing);
         AddRow(panel, "Atualizacao ms", _updateInterval);
 
-        _fontBold = CreateCheck(_config.FONT_BOLD, v => SetConfig(() => _config.FONT_BOLD = v));
-        _fontItalic = CreateCheck(_config.FONT_ITALIC, v => SetConfig(() => _config.FONT_ITALIC = v));
         _fontOutlineWidth = CreateIntBox(_config.FONT_OUTLINE_WIDTH, v => SetConfig(() => _config.FONT_OUTLINE_WIDTH = v));
         _fontPaddingX = CreateIntBox(_config.FONT_PADDING_X, v => SetConfig(() => _config.FONT_PADDING_X = v));
         _fontPaddingY = CreateIntBox(_config.FONT_PADDING_Y, v => SetConfig(() => _config.FONT_PADDING_Y = v));
         _fontOffsetX = CreateIntBox(_config.FONT_OFFSET_X, v => SetConfig(() => _config.FONT_OFFSET_X = v));
         _fontOffsetY = CreateIntBox(_config.FONT_OFFSET_Y, v => SetConfig(() => _config.FONT_OFFSET_Y = v));
         AddSection(panel, "Fonte");
-        AddRow(panel, "Negrito", _fontBold);
-        AddRow(panel, "Italico", _fontItalic);
         AddRow(panel, "Largura contorno", _fontOutlineWidth);
         AddRow(panel, "Padding X", _fontPaddingX);
         AddRow(panel, "Padding Y", _fontPaddingY);
         AddRow(panel, "Offset X", _fontOffsetX);
         AddRow(panel, "Offset Y", _fontOffsetY);
 
-        _windowOpacity = CreateDoubleBox(_config.WINDOW_OPACITY, v => SetConfig(() => _config.WINDOW_OPACITY = v));
+        (_windowOpacity, _windowOpacityValue) = CreateOpacitySlider(_config.WINDOW_OPACITY, v => SetConfig(() => _config.WINDOW_OPACITY = v));
         _clickThrough = CreateCheck(_config.CLICK_THROUGH, v => SetConfig(() => _config.CLICK_THROUGH = v));
         _alwaysOnTop = CreateCheck(_config.ALWAYS_ON_TOP, v => SetAlwaysOnTop(v));
         _alwaysOnBottom = CreateCheck(_config.ALWAYS_ON_BOTTOM, v => SetAlwaysOnBottom(v));
         _showInTaskbar = CreateCheck(_config.SHOW_IN_TASKBAR, v => SetConfig(() => _config.SHOW_IN_TASKBAR = v));
         _startWithWindows = CreateCheck(_config.START_WITH_WINDOWS, v => SetConfig(() => _config.START_WITH_WINDOWS = v));
         AddSection(panel, "Janela");
-        AddRow(panel, "Opacidade global", _windowOpacity);
+        AddRow(panel, "Opacidade global", BuildSliderControl(_windowOpacity, _windowOpacityValue));
         AddRow(panel, "Ignorar clique", _clickThrough);
         AddRow(panel, "Sempre acima", _alwaysOnTop);
         AddRow(panel, "Sempre abaixo", _alwaysOnBottom);
@@ -302,9 +300,12 @@ public sealed class EditorWindow : Window
 
         _slotFont = CreateFontCombo("", SetSlotFont);
         _slotSize = CreateIntBox(1, SetSlotSize);
+        _slotBold = CreateCheck(false, SetSlotBold);
+        _slotItalic = CreateCheck(false, SetSlotItalic);
         _slotColor = CreateColorButton("#FFFFFF", "Cor do item", SetSlotColor);
         _slotRenderMode = CreateCombo(["filled", "outline", "filled_outline"], "filled", SetSlotRenderMode);
-        _slotOpacity = CreateDoubleBox(1.0, SetSlotOpacity);
+        (_slotOpacity, _slotOpacityValue) = CreateOpacitySlider(1.0, SetSlotOpacity);
+        _slotAnimationDuration = CreateIntBox(130, SetSlotAnimationDuration);
         _slotWidth = CreateIntBox(1, SetSlotWidth);
         _slotHeight = CreateIntBox(1, SetSlotHeight);
         _slotTextX = CreateIntBox(0, v => SetSlotTextOffset("x", v));
@@ -314,9 +315,12 @@ public sealed class EditorWindow : Window
 
         AddItemRow(panel, "font", "Fonte", _slotFont);
         AddItemRow(panel, "size", "Tamanho texto", _slotSize);
+        AddItemRow(panel, "bold", "Negrito", _slotBold);
+        AddItemRow(panel, "italic", "Italico", _slotItalic);
         AddItemRow(panel, "color", "Cor", _slotColor);
         AddItemRow(panel, "render", "Modo render", _slotRenderMode);
-        AddItemRow(panel, "opacity", "Opacidade", _slotOpacity);
+        AddItemRow(panel, "opacity", "Opacidade", BuildSliderControl(_slotOpacity, _slotOpacityValue));
+        AddItemRow(panel, "animation", "Animacao ms", _slotAnimationDuration);
         AddItemRow(panel, "width", "Largura", _slotWidth);
         AddItemRow(panel, "height", "Altura", _slotHeight);
         AddItemRow(panel, "text_x", "Texto X", _slotTextX);
@@ -472,6 +476,54 @@ public sealed class EditorWindow : Window
             }
         };
         return box;
+    }
+
+    private (Slider Slider, TextBlock ValueText) CreateOpacitySlider(double value, Action<double> callback)
+    {
+        var valueText = new TextBlock
+        {
+            MinWidth = 48,
+            TextAlignment = TextAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        var slider = new Slider
+        {
+            Minimum = 0,
+            Maximum = 100,
+            TickFrequency = 5,
+            IsSnapToTickEnabled = false,
+            VerticalAlignment = VerticalAlignment.Center,
+            Value = ConfigService.Clamp(value, 0.0, 1.0) * 100,
+        };
+        UpdateOpacityText(valueText, slider.Value);
+        slider.ValueChanged += (_, _) =>
+        {
+            UpdateOpacityText(valueText, slider.Value);
+            if (!_loading)
+            {
+                callback(ConfigService.Clamp(slider.Value / 100.0, 0.0, 1.0));
+            }
+        };
+
+        return (slider, valueText);
+    }
+
+    private static Grid BuildSliderControl(Slider slider, TextBlock valueText)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        slider.Margin = new Thickness(0, 0, 8, 0);
+        Grid.SetColumn(slider, 0);
+        grid.Children.Add(slider);
+        Grid.SetColumn(valueText, 1);
+        grid.Children.Add(valueText);
+        return grid;
+    }
+
+    private static void UpdateOpacityText(TextBlock text, double value)
+    {
+        text.Text = $"{Math.Round(value):0}%";
     }
 
     private CheckBox CreateCheck(bool value, Action<bool> callback)
@@ -680,6 +732,38 @@ public sealed class EditorWindow : Window
         ScheduleLivePreview();
     }
 
+    private void SetSlotBold(bool value)
+    {
+        if (_loading)
+        {
+            return;
+        }
+
+        foreach (var slotId in SlotTargets("bold"))
+        {
+            _config.SLOT_FONT_BOLD[slotId] = value;
+        }
+
+        RefreshSelectedControls();
+        ScheduleLivePreview();
+    }
+
+    private void SetSlotItalic(bool value)
+    {
+        if (_loading)
+        {
+            return;
+        }
+
+        foreach (var slotId in SlotTargets("italic"))
+        {
+            _config.SLOT_FONT_ITALIC[slotId] = value;
+        }
+
+        RefreshSelectedControls();
+        ScheduleLivePreview();
+    }
+
     private void SetSlotColor(string color)
     {
         if (_loading)
@@ -722,7 +806,23 @@ public sealed class EditorWindow : Window
 
         foreach (var slotId in SlotTargets("opacity"))
         {
-            _config.SLOT_OPACITIES[slotId] = opacity;
+            _config.SLOT_OPACITIES[slotId] = ConfigService.Clamp(opacity, 0.0, 1.0);
+        }
+
+        RefreshSelectedControls();
+        ScheduleLivePreview();
+    }
+
+    private void SetSlotAnimationDuration(int value)
+    {
+        if (_loading)
+        {
+            return;
+        }
+
+        foreach (var slotId in SlotTargets("animation"))
+        {
+            _config.SLOT_ANIMATION_DURATIONS_MS[slotId] = ConfigService.Clamp(value, 0, 5000);
         }
 
         RefreshSelectedControls();
@@ -824,6 +924,12 @@ public sealed class EditorWindow : Window
                     GrowSlotBoxForFont(slotId);
                 });
                 break;
+            case "bold":
+                CopyToAll(slotId => _config.SLOT_FONT_BOLD[slotId] = _config.SLOT_FONT_BOLD[_selectedSlot]);
+                break;
+            case "italic":
+                CopyToAll(slotId => _config.SLOT_FONT_ITALIC[slotId] = _config.SLOT_FONT_ITALIC[_selectedSlot]);
+                break;
             case "color":
                 CopyToAll(slotId => _config.SLOT_FONT_COLORS[slotId] = _config.SLOT_FONT_COLORS[_selectedSlot]);
                 break;
@@ -832,6 +938,9 @@ public sealed class EditorWindow : Window
                 break;
             case "opacity":
                 CopyToAll(slotId => _config.SLOT_OPACITIES[slotId] = _config.SLOT_OPACITIES[_selectedSlot]);
+                break;
+            case "animation":
+                CopyToAll(slotId => _config.SLOT_ANIMATION_DURATIONS_MS[slotId] = _config.SLOT_ANIMATION_DURATIONS_MS[_selectedSlot]);
                 break;
             case "width":
                 CopyToAll(slotId => _config.SLOT_WIDTHS[slotId] = _config.SLOT_WIDTHS[_selectedSlot]);
@@ -889,17 +998,14 @@ public sealed class EditorWindow : Window
         SetText(_verticalSpacing, _config.VERTICAL_GROUP_SPACING);
         SetText(_columnWidth, _config.VERTICAL_COLUMN_WIDTH);
         _verticalAlign.SelectedItem = _config.VERTICAL_ALIGN;
-        SetText(_animationDuration, _config.ANIMATION_DURATION_MS);
         _animationEasing.SelectedItem = _config.ANIMATION_EASING;
         SetText(_updateInterval, _config.UPDATE_INTERVAL_MS);
-        _fontBold.IsChecked = _config.FONT_BOLD;
-        _fontItalic.IsChecked = _config.FONT_ITALIC;
         SetText(_fontOutlineWidth, _config.FONT_OUTLINE_WIDTH);
         SetText(_fontPaddingX, _config.FONT_PADDING_X);
         SetText(_fontPaddingY, _config.FONT_PADDING_Y);
         SetText(_fontOffsetX, _config.FONT_OFFSET_X);
         SetText(_fontOffsetY, _config.FONT_OFFSET_Y);
-        SetText(_windowOpacity, _config.WINDOW_OPACITY);
+        SetSlider(_windowOpacity, _windowOpacityValue, _config.WINDOW_OPACITY);
         _clickThrough.IsChecked = _config.CLICK_THROUGH;
         _alwaysOnTop.IsChecked = _config.ALWAYS_ON_TOP;
         _alwaysOnBottom.IsChecked = _config.ALWAYS_ON_BOTTOM;
@@ -920,6 +1026,8 @@ public sealed class EditorWindow : Window
         var palette = ThemeService.CurrentPalette();
         ThemeService.ApplyWindowFrame(this, palette);
         ThemeService.ApplyControlTree(this, palette);
+        _selectedLabel.Background = new SolidColorBrush(palette.Panel);
+        _selectedLabel.Foreground = new SolidColorBrush(palette.Text);
         RefreshColorButtons();
     }
 
@@ -938,9 +1046,12 @@ public sealed class EditorWindow : Window
         _selectedLabel.Text = $"{index}/{ClockConfig.SlotIds.Length} - {ClockConfig.SlotLabels.GetValueOrDefault(_selectedSlot, _selectedSlot)}";
         _slotFont.Text = _config.SLOT_FONT_FAMILIES[_selectedSlot];
         SetText(_slotSize, _config.SLOT_FONT_PIXEL_SIZES[_selectedSlot]);
+        _slotBold.IsChecked = _config.SLOT_FONT_BOLD[_selectedSlot];
+        _slotItalic.IsChecked = _config.SLOT_FONT_ITALIC[_selectedSlot];
         SetButtonColor(_slotColor, _config.SLOT_FONT_COLORS[_selectedSlot]);
         _slotRenderMode.SelectedItem = _config.SLOT_RENDER_MODES[_selectedSlot];
-        SetText(_slotOpacity, _config.SLOT_OPACITIES[_selectedSlot]);
+        SetSlider(_slotOpacity, _slotOpacityValue, _config.SLOT_OPACITIES[_selectedSlot]);
+        SetText(_slotAnimationDuration, _config.SLOT_ANIMATION_DURATIONS_MS[_selectedSlot]);
         SetText(_slotWidth, _config.SLOT_WIDTHS[_selectedSlot]);
         SetText(_slotHeight, _config.SLOT_HEIGHTS[_selectedSlot]);
         SetText(_slotTextX, _config.SLOT_TEXT_OFFSETS[_selectedSlot].x);
@@ -959,14 +1070,23 @@ public sealed class EditorWindow : Window
         };
     }
 
+    private static void SetSlider(Slider slider, TextBlock valueText, double value)
+    {
+        slider.Value = ConfigService.Clamp(value, 0.0, 1.0) * 100;
+        UpdateOpacityText(valueText, slider.Value);
+    }
+
     private void ResetSlotDefaults()
     {
         var slotId = _selectedSlot;
         _config.SLOT_FONT_FAMILIES[slotId] = _defaults.SLOT_FONT_FAMILIES[slotId];
         _config.SLOT_FONT_PIXEL_SIZES[slotId] = _defaults.SLOT_FONT_PIXEL_SIZES[slotId];
+        _config.SLOT_FONT_BOLD[slotId] = _defaults.SLOT_FONT_BOLD[slotId];
+        _config.SLOT_FONT_ITALIC[slotId] = _defaults.SLOT_FONT_ITALIC[slotId];
         _config.SLOT_FONT_COLORS[slotId] = _defaults.SLOT_FONT_COLORS[slotId];
         _config.SLOT_RENDER_MODES[slotId] = _defaults.SLOT_RENDER_MODES[slotId];
         _config.SLOT_OPACITIES[slotId] = _defaults.SLOT_OPACITIES[slotId];
+        _config.SLOT_ANIMATION_DURATIONS_MS[slotId] = _defaults.SLOT_ANIMATION_DURATIONS_MS[slotId];
         _config.SLOT_WIDTHS[slotId] = _defaults.SLOT_WIDTHS[slotId];
         _config.SLOT_HEIGHTS[slotId] = _defaults.SLOT_HEIGHTS[slotId];
         _config.SLOT_TEXT_OFFSETS[slotId] = _defaults.SLOT_TEXT_OFFSETS[slotId].Clone();

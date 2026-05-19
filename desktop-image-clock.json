@@ -1,6 +1,6 @@
 {
   "CENTER_X": 960,
-  "CENTER_Y": 340,
+  "CENTER_Y": 500,
   "SCREEN_INDEX": 0,
   "SHOW_SECONDS": true,
   "SHOW_SEPARATORS": false,
@@ -70,6 +70,26 @@
     "separator_1": "#C1C1C1",
     "separator_2": "#C1C1C1"
   },
+  "SLOT_FONT_BOLD": {
+    "hour_tens": false,
+    "hour_ones": false,
+    "separator_1": false,
+    "minute_tens": false,
+    "minute_ones": false,
+    "separator_2": false,
+    "second_tens": false,
+    "second_ones": false
+  },
+  "SLOT_FONT_ITALIC": {
+    "hour_tens": false,
+    "hour_ones": false,
+    "separator_1": false,
+    "minute_tens": false,
+    "minute_ones": false,
+    "separator_2": false,
+    "second_tens": false,
+    "second_ones": false
+  },
   "SLOT_RENDER_MODES": {
     "hour_tens": "filled",
     "hour_ones": "filled",
@@ -89,6 +109,16 @@
     "separator_2": 1,
     "second_tens": 1,
     "second_ones": 1
+  },
+  "SLOT_ANIMATION_DURATIONS_MS": {
+    "hour_tens": 130,
+    "hour_ones": 130,
+    "separator_1": 130,
+    "minute_tens": 130,
+    "minute_ones": 130,
+    "separator_2": 130,
+    "second_tens": 130,
+    "second_ones": 130
   },
   "SLOT_WIDTHS": {
     "hour_tens": 127,

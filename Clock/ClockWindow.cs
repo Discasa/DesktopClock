@@ -364,9 +364,10 @@ public sealed class ClockWindow : Window
         canvas.Children.Clear();
         var targetOpacity = EffectiveOpacity(slot);
 
-        if (animate && _config.ANIMATION_DURATION_MS > 0 && oldValue is not null)
+        var animationDurationMs = AnimationDurationFor(slot);
+        if (animate && animationDurationMs > 0 && oldValue is not null)
         {
-            var duration = TimeSpan.FromMilliseconds(_config.ANIMATION_DURATION_MS);
+            var duration = TimeSpan.FromMilliseconds(animationDurationMs);
             var oldVisual = CreateTextVisual(slot, oldValue);
             oldVisual.Opacity = targetOpacity;
             var newVisual = CreateTextVisual(slot, newValue);
@@ -421,8 +422,8 @@ public sealed class ClockWindow : Window
         var fontFamily = new MediaFontFamily(FontFamilyFor(slot));
         var typeface = new Typeface(
             fontFamily,
-            _config.FONT_ITALIC ? FontStyles.Italic : FontStyles.Normal,
-            _config.FONT_BOLD ? FontWeights.Bold : FontWeights.Normal,
+            _config.SLOT_FONT_ITALIC.GetValueOrDefault(slot.Id, _config.FONT_ITALIC) ? FontStyles.Italic : FontStyles.Normal,
+            _config.SLOT_FONT_BOLD.GetValueOrDefault(slot.Id, _config.FONT_BOLD) ? FontWeights.Bold : FontWeights.Normal,
             FontStretches.Normal);
         var dpi = VisualTreeHelper.GetDpi(this);
         var formatted = new FormattedText(
@@ -560,6 +561,14 @@ public sealed class ClockWindow : Window
     private string RenderModeFor(SlotLayout slot)
     {
         return _config.SLOT_RENDER_MODES.GetValueOrDefault(slot.Id, _config.FONT_RENDER_MODE);
+    }
+
+    private int AnimationDurationFor(SlotLayout slot)
+    {
+        return ConfigService.Clamp(
+            _config.SLOT_ANIMATION_DURATIONS_MS.GetValueOrDefault(slot.Id, _config.ANIMATION_DURATION_MS),
+            0,
+            5000);
     }
 
     private PointOffset TextOffsetFor(SlotLayout slot)

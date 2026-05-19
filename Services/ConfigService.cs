@@ -125,8 +125,11 @@ public static class ConfigService
         config.SLOT_FONT_PIXEL_SIZES ??= new Dictionary<string, int>();
         config.SLOT_FONT_FAMILIES ??= new Dictionary<string, string>();
         config.SLOT_FONT_COLORS ??= new Dictionary<string, string>();
+        config.SLOT_FONT_BOLD ??= new Dictionary<string, bool>();
+        config.SLOT_FONT_ITALIC ??= new Dictionary<string, bool>();
         config.SLOT_RENDER_MODES ??= new Dictionary<string, string>();
         config.SLOT_OPACITIES ??= new Dictionary<string, double>();
+        config.SLOT_ANIMATION_DURATIONS_MS ??= new Dictionary<string, int>();
         config.SLOT_WIDTHS ??= new Dictionary<string, int>();
         config.SLOT_HEIGHTS ??= new Dictionary<string, int>();
         config.SLOT_TEXT_OFFSETS ??= new Dictionary<string, PointOffset>();
@@ -143,10 +146,20 @@ public static class ConfigService
             config.SLOT_FONT_COLORS[slotId] = NormalizeHex(
                 config.SLOT_FONT_COLORS.GetValueOrDefault(slotId),
                 defaults.SLOT_FONT_COLORS[slotId]);
+            config.SLOT_FONT_BOLD[slotId] = config.SLOT_FONT_BOLD.TryGetValue(slotId, out var bold)
+                ? bold
+                : config.FONT_BOLD;
+            config.SLOT_FONT_ITALIC[slotId] = config.SLOT_FONT_ITALIC.TryGetValue(slotId, out var italic)
+                ? italic
+                : config.FONT_ITALIC;
             config.SLOT_RENDER_MODES[slotId] = NormalizeRenderMode(
                 config.SLOT_RENDER_MODES.GetValueOrDefault(slotId),
                 config.FONT_RENDER_MODE);
             config.SLOT_OPACITIES[slotId] = Clamp(config.SLOT_OPACITIES.GetValueOrDefault(slotId, 1.0), 0.0, 1.0);
+            config.SLOT_ANIMATION_DURATIONS_MS[slotId] = Clamp(
+                config.SLOT_ANIMATION_DURATIONS_MS.GetValueOrDefault(slotId, config.ANIMATION_DURATION_MS),
+                0,
+                5000);
             config.SLOT_WIDTHS[slotId] = Math.Max(1, config.SLOT_WIDTHS.GetValueOrDefault(slotId, defaults.SLOT_WIDTHS[slotId]));
             config.SLOT_HEIGHTS[slotId] = Math.Max(1, config.SLOT_HEIGHTS.GetValueOrDefault(slotId, defaults.SLOT_HEIGHTS[slotId]));
             config.SLOT_TEXT_OFFSETS[slotId] = NormalizeOffset(config.SLOT_TEXT_OFFSETS.GetValueOrDefault(slotId));
