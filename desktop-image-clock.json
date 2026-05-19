@@ -2,6 +2,7 @@
   "CENTER_X": 960,
   "CENTER_Y": 500,
   "SCREEN_INDEX": 0,
+  "LANGUAGE": "system",
   "SHOW_SECONDS": true,
   "SHOW_SEPARATORS": false,
   "LAYOUT_MODE": "vertical",
@@ -30,8 +31,6 @@
   "FONT_FAMILY": "Segoe UI",
   "FONT_FALLBACK_FAMILY": "Segoe UI",
   "FONT_COLOR": "#C1C1C1",
-  "FONT_BOLD": false,
-  "FONT_ITALIC": false,
   "FONT_RENDER_MODE": "filled",
   "FONT_OUTLINE_WIDTH": 1,
   "FONT_PADDING_X": 0,
@@ -208,15 +207,14 @@
       "y": 0
     }
   },
-  "ANIMATION_DURATION_MS": 130,
   "ANIMATION_EASING": "InOutQuad",
   "UPDATE_INTERVAL_MS": 1000,
-  "WINDOW_OPACITY": 1,
   "CLICK_THROUGH": true,
   "ALWAYS_ON_TOP": false,
   "ALWAYS_ON_BOTTOM": true,
   "SHOW_IN_TASKBAR": false,
   "START_WITH_WINDOWS": false,
+  "KEEP_EDITOR_IN_TRAY": false,
   "WINDOWS_STARTUP_NAME": "Desktop Clock",
   "CONFIG_RELOAD_INTERVAL_MS": 250
 }

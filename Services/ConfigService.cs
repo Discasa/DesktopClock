@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -22,6 +23,14 @@ public static class ConfigService
     public static string PreviewConfigPath => Path.Combine(RootDirectory, ".desktop-image-clock.preview.json");
 
     public static string ErrorLogPath => Path.Combine(RootDirectory, "clock-error.log");
+
+    public static string EditorActivePath => Path.Combine(RootDirectory, ".desktop-clock-editor-active");
+
+    public static string EditorActivePathForConfig(string configPath)
+    {
+        var directory = Path.GetDirectoryName(Path.GetFullPath(configPath));
+        return Path.Combine(string.IsNullOrWhiteSpace(directory) ? RootDirectory : directory, ".desktop-clock-editor-active");
+    }
 
     public static ClockConfig LoadConfig(string? path = null)
     {
@@ -73,6 +82,7 @@ public static class ConfigService
         var config = incoming ?? defaults.Clone();
 
         config.HOUR_MODE = NormalizeChoice(config.HOUR_MODE, ["12h", "24h"], defaults.HOUR_MODE);
+        config.LANGUAGE = NormalizeChoice(config.LANGUAGE, ["system", "en", "pt-BR"], defaults.LANGUAGE);
         config.HOUR_FORMAT = config.HOUR_MODE == "12h" ? "%I" : "%H";
         config.LAYOUT_MODE = NormalizeChoice(config.LAYOUT_MODE, ["horizontal", "vertical"], defaults.LAYOUT_MODE);
         config.VERTICAL_ALIGN = NormalizeChoice(config.VERTICAL_ALIGN, ["left", "center", "right"], defaults.VERTICAL_ALIGN);
@@ -106,9 +116,7 @@ public static class ConfigService
         config.FONT_PADDING_Y = Clamp(config.FONT_PADDING_Y, 0, 500);
         config.FONT_OFFSET_X = Clamp(config.FONT_OFFSET_X, -1000, 1000);
         config.FONT_OFFSET_Y = Clamp(config.FONT_OFFSET_Y, -1000, 1000);
-        config.ANIMATION_DURATION_MS = Clamp(config.ANIMATION_DURATION_MS, 0, 5000);
         config.UPDATE_INTERVAL_MS = Clamp(config.UPDATE_INTERVAL_MS, 20, 60000);
-        config.WINDOW_OPACITY = Clamp(config.WINDOW_OPACITY, 0.0, 1.0);
         config.CONFIG_RELOAD_INTERVAL_MS = Clamp(config.CONFIG_RELOAD_INTERVAL_MS, 100, 10000);
 
         config.VERTICAL_GROUP_ALIGNMENTS ??= new Dictionary<string, string>();
@@ -146,18 +154,14 @@ public static class ConfigService
             config.SLOT_FONT_COLORS[slotId] = NormalizeHex(
                 config.SLOT_FONT_COLORS.GetValueOrDefault(slotId),
                 defaults.SLOT_FONT_COLORS[slotId]);
-            config.SLOT_FONT_BOLD[slotId] = config.SLOT_FONT_BOLD.TryGetValue(slotId, out var bold)
-                ? bold
-                : config.FONT_BOLD;
-            config.SLOT_FONT_ITALIC[slotId] = config.SLOT_FONT_ITALIC.TryGetValue(slotId, out var italic)
-                ? italic
-                : config.FONT_ITALIC;
+            config.SLOT_FONT_BOLD[slotId] = config.SLOT_FONT_BOLD.GetValueOrDefault(slotId, defaults.SLOT_FONT_BOLD[slotId]);
+            config.SLOT_FONT_ITALIC[slotId] = config.SLOT_FONT_ITALIC.GetValueOrDefault(slotId, defaults.SLOT_FONT_ITALIC[slotId]);
             config.SLOT_RENDER_MODES[slotId] = NormalizeRenderMode(
                 config.SLOT_RENDER_MODES.GetValueOrDefault(slotId),
                 config.FONT_RENDER_MODE);
             config.SLOT_OPACITIES[slotId] = Clamp(config.SLOT_OPACITIES.GetValueOrDefault(slotId, 1.0), 0.0, 1.0);
             config.SLOT_ANIMATION_DURATIONS_MS[slotId] = Clamp(
-                config.SLOT_ANIMATION_DURATIONS_MS.GetValueOrDefault(slotId, config.ANIMATION_DURATION_MS),
+                config.SLOT_ANIMATION_DURATIONS_MS.GetValueOrDefault(slotId, defaults.SLOT_ANIMATION_DURATIONS_MS[slotId]),
                 0,
                 5000);
             config.SLOT_WIDTHS[slotId] = Math.Max(1, config.SLOT_WIDTHS.GetValueOrDefault(slotId, defaults.SLOT_WIDTHS[slotId]));
@@ -172,6 +176,76 @@ public static class ConfigService
     public static DateTime? GetLastWriteTimeUtc(string path)
     {
         return File.Exists(path) ? File.GetLastWriteTimeUtc(path) : null;
+    }
+
+    public static void MarkEditorActive(string? configPath = null)
+    {
+        try
+        {
+            File.WriteAllText(ResolveEditorActivePath(configPath), Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+        }
+        catch
+        {
+            // The marker only improves editor/clock coordination; failure should not block the editor.
+        }
+    }
+
+    public static void ClearEditorActive(string? configPath = null)
+    {
+        try
+        {
+            var markerPath = ResolveEditorActivePath(configPath);
+            if (File.Exists(markerPath))
+            {
+                File.Delete(markerPath);
+            }
+        }
+        catch
+        {
+            // Best-effort cleanup. Stale markers are ignored by IsEditorActive.
+        }
+    }
+
+    public static bool IsEditorActive(string? configPath = null)
+    {
+        try
+        {
+            var markerPath = ResolveEditorActivePath(configPath);
+            if (!File.Exists(markerPath))
+            {
+                return false;
+            }
+
+            var text = ReadAllTextShared(markerPath).Trim();
+            if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pid))
+            {
+                try
+                {
+                    using var process = Process.GetProcessById(pid);
+                    if (!process.HasExited)
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    ClearEditorActive(configPath);
+                    return false;
+                }
+            }
+
+            ClearEditorActive(configPath);
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static string ResolveEditorActivePath(string? configPath)
+    {
+        return string.IsNullOrWhiteSpace(configPath) ? EditorActivePath : EditorActivePathForConfig(configPath);
     }
 
     public static int MinimumSlotWidth(string slotId, int fontSize)

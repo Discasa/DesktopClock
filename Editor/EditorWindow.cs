@@ -7,11 +7,13 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DesktopClock.Models;
+using DesktopClock.Native;
 using DesktopClock.Services;
 using Forms = System.Windows.Forms;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
 using ComboBox = System.Windows.Controls.ComboBox;
+using DrawingIcon = System.Drawing.Icon;
 using MediaBrushes = System.Windows.Media.Brushes;
 using Slider = System.Windows.Controls.Slider;
 using TabControl = System.Windows.Controls.TabControl;
@@ -32,16 +34,21 @@ public sealed class EditorWindow : Window
     private readonly ClockConfig _defaults = ClockConfig.CreateDefault();
     private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(80) };
     private readonly Dictionary<string, CheckBox> _applyAll = new();
+    private readonly List<IntPtr> _hiddenClockWindows = [];
     private readonly string[] _fonts;
 
     private ClockConfig _config;
+    private string _language;
     private string _selectedSlot = ClockConfig.SlotIds[0];
     private bool _loading;
     private Process? _previewProcess;
+    private Forms.NotifyIcon? _trayIcon;
+    private bool _allowClose;
 
     private TextBox _centerX = null!;
     private TextBox _centerY = null!;
     private TextBox _screenIndex = null!;
+    private ComboBox _languageCombo = null!;
     private ComboBox _layoutMode = null!;
     private CheckBox _showSeconds = null!;
     private CheckBox _showSeparators = null!;
@@ -60,13 +67,12 @@ public sealed class EditorWindow : Window
     private TextBox _fontPaddingY = null!;
     private TextBox _fontOffsetX = null!;
     private TextBox _fontOffsetY = null!;
-    private Slider _windowOpacity = null!;
-    private TextBlock _windowOpacityValue = null!;
     private CheckBox _clickThrough = null!;
     private CheckBox _alwaysOnTop = null!;
     private CheckBox _alwaysOnBottom = null!;
     private CheckBox _showInTaskbar = null!;
     private CheckBox _startWithWindows = null!;
+    private CheckBox _keepInTray = null!;
 
     private TextBlock _selectedLabel = null!;
     private ComboBox _slotFont = null!;
@@ -91,9 +97,10 @@ public sealed class EditorWindow : Window
         _configPath = Path.GetFullPath(configPath);
         _previewPath = ConfigService.PreviewConfigPath;
         _config = ConfigService.LoadConfig(_configPath);
+        _language = LocalizationService.ResolveLanguage(_config.LANGUAGE);
         _fonts = Fonts.SystemFontFamilies.Select(font => font.Source).Distinct().OrderBy(x => x).ToArray();
 
-        Title = "Desktop Clock Editor";
+        Title = T("EditorTitle");
         Width = 520;
         Height = 800;
         MinWidth = 460;
@@ -110,15 +117,25 @@ public sealed class EditorWindow : Window
 
         Loaded += (_, _) =>
         {
+            ConfigService.MarkEditorActive(_configPath);
+            HideExistingClockWindows();
             ApplyTheme();
             RefreshAllControls();
             ScheduleLivePreview();
         };
-        SourceInitialized += (_, _) => ApplyTheme();
+        SourceInitialized += (_, _) =>
+        {
+            ConfigService.MarkEditorActive(_configPath);
+            HideExistingClockWindows();
+            ApplyTheme();
+        };
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += SystemEvents_UserPreferenceChanged;
-        Closing += (_, _) => StopPreview();
+        Closing += EditorWindow_Closing;
         Closed += (_, _) =>
         {
+            DisposeTrayIcon();
+            ConfigService.ClearEditorActive(_configPath);
+            RestoreHiddenClockWindows();
             Microsoft.Win32.SystemEvents.UserPreferenceChanged -= SystemEvents_UserPreferenceChanged;
             DeletePreviewConfig();
         };
@@ -126,6 +143,8 @@ public sealed class EditorWindow : Window
 
     private UIElement BuildUi()
     {
+        _language = LocalizationService.ResolveLanguage(_config.LANGUAGE);
+        Title = T("EditorTitle");
         var root = new DockPanel { Margin = new Thickness(10) };
         var footer = BuildFooter();
         DockPanel.SetDock(footer, Dock.Bottom);
@@ -138,7 +157,7 @@ public sealed class EditorWindow : Window
         var generalPanel = new StackPanel();
         tabs.Items.Add(new TabItem
         {
-            Header = "Geral",
+            Header = T("General"),
             Content = new ScrollViewer { Content = generalPanel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
         });
         BuildGeneralTab(generalPanel);
@@ -146,7 +165,7 @@ public sealed class EditorWindow : Window
         var itemPanel = new StackPanel();
         tabs.Items.Add(new TabItem
         {
-            Header = "Item",
+            Header = T("Item"),
             Content = new ScrollViewer { Content = itemPanel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
         });
         BuildItemTab(itemPanel);
@@ -166,22 +185,23 @@ public sealed class EditorWindow : Window
         {
             VerticalAlignment = VerticalAlignment.Center,
             Foreground = MediaBrushes.DimGray,
-            Text = "Previa ao vivo ativa",
+            Text = T("LivePreviewActive"),
+            Tag = "muted",
         };
         Grid.SetColumn(_status, 0);
         grid.Children.Add(_status);
 
-        var resetItem = new Button { Content = "Restaurar item", Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(8, 0, 0, 0) };
+        var resetItem = new Button { Content = T("ResetItem"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(8, 0, 0, 0) };
         resetItem.Click += (_, _) => ResetSlotDefaults();
         Grid.SetColumn(resetItem, 1);
         grid.Children.Add(resetItem);
 
-        var resetAll = new Button { Content = "Restaurar tudo", Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0) };
+        var resetAll = new Button { Content = T("ResetAll"), Padding = new Thickness(10, 5, 10, 5), Margin = new Thickness(6, 0, 0, 0) };
         resetAll.Click += (_, _) => RestoreDefaults();
         Grid.SetColumn(resetAll, 2);
         grid.Children.Add(resetAll);
 
-        var apply = new Button { Content = "Aplicar", Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(6, 0, 0, 0) };
+        var apply = new Button { Content = T("Apply"), Padding = new Thickness(14, 5, 14, 5), Margin = new Thickness(6, 0, 0, 0) };
         apply.Click += (_, _) => ApplyToClock();
         Grid.SetColumn(apply, 3);
         grid.Children.Add(apply);
@@ -194,10 +214,12 @@ public sealed class EditorWindow : Window
         _centerX = CreateIntBox(_config.CENTER_X, v => SetConfig(() => _config.CENTER_X = v));
         _centerY = CreateIntBox(_config.CENTER_Y, v => SetConfig(() => _config.CENTER_Y = v));
         _screenIndex = CreateIntBox(_config.SCREEN_INDEX, v => SetConfig(() => _config.SCREEN_INDEX = v));
-        AddSection(panel, "Posicao");
-        AddRow(panel, "Centro X", _centerX);
-        AddRow(panel, "Centro Y", _centerY);
-        AddRow(panel, "Monitor", _screenIndex);
+        _languageCombo = CreateLanguageCombo();
+        AddSection(panel, T("Position"));
+        AddRow(panel, T("CenterX"), _centerX);
+        AddRow(panel, T("CenterY"), _centerY);
+        AddRow(panel, T("Monitor"), _screenIndex);
+        AddRow(panel, T("Language"), _languageCombo);
 
         _layoutMode = CreateCombo(["horizontal", "vertical"], _config.LAYOUT_MODE, v => SetConfig(() => _config.LAYOUT_MODE = v));
         _showSeconds = CreateCheck(_config.SHOW_SECONDS, v => SetConfig(() => _config.SHOW_SECONDS = v));
@@ -208,12 +230,12 @@ public sealed class EditorWindow : Window
             _config.HOUR_FORMAT = v == "12h" ? "%I" : "%H";
         }));
         _colonCharacter = CreateTextBox(_config.FONT_COLON_CHARACTER, v => SetConfig(() => _config.FONT_COLON_CHARACTER = string.IsNullOrEmpty(v) ? ":" : v), 4);
-        AddSection(panel, "Tempo");
-        AddRow(panel, "Layout", _layoutMode);
-        AddRow(panel, "Segundos", _showSeconds);
-        AddRow(panel, "Separadores", _showSeparators);
-        AddRow(panel, "Modo hora", _hourMode);
-        AddRow(panel, "Separador texto", _colonCharacter);
+        AddSection(panel, T("Time"));
+        AddRow(panel, T("Layout"), _layoutMode);
+        AddRow(panel, T("Seconds"), _showSeconds);
+        AddRow(panel, T("Separators"), _showSeparators);
+        AddRow(panel, T("HourMode"), _hourMode);
+        AddRow(panel, T("SeparatorText"), _colonCharacter);
 
         _digitSpacing = CreateIntBox(_config.DIGIT_SPACING, v => SetConfig(() => _config.DIGIT_SPACING = v));
         _separatorSpacing = CreateIntBox(_config.SEPARATOR_SPACING, v => SetConfig(() => _config.SEPARATOR_SPACING = v));
@@ -221,45 +243,45 @@ public sealed class EditorWindow : Window
         _verticalSpacing = CreateIntBox(_config.VERTICAL_GROUP_SPACING, v => SetConfig(() => _config.VERTICAL_GROUP_SPACING = v));
         _columnWidth = CreateIntBox(_config.VERTICAL_COLUMN_WIDTH, v => SetConfig(() => _config.VERTICAL_COLUMN_WIDTH = v));
         _verticalAlign = CreateCombo(["left", "center", "right"], _config.VERTICAL_ALIGN, v => SetConfig(() => _config.VERTICAL_ALIGN = v));
-        AddSection(panel, "Espacamento");
-        AddRow(panel, "Espaco digitos", _digitSpacing);
-        AddRow(panel, "Espaco sep.", _separatorSpacing);
-        AddRow(panel, "Espaco grupos", _groupSpacing);
-        AddRow(panel, "Espaco vertical", _verticalSpacing);
-        AddRow(panel, "Largura coluna", _columnWidth);
-        AddRow(panel, "Alinh. coluna", _verticalAlign);
+        AddSection(panel, T("Spacing"));
+        AddRow(panel, T("DigitSpacing"), _digitSpacing);
+        AddRow(panel, T("SeparatorSpacing"), _separatorSpacing);
+        AddRow(panel, T("GroupSpacing"), _groupSpacing);
+        AddRow(panel, T("VerticalSpacing"), _verticalSpacing);
+        AddRow(panel, T("ColumnWidth"), _columnWidth);
+        AddRow(panel, T("ColumnAlign"), _verticalAlign);
 
         _animationEasing = CreateCombo(["InOutQuad", "Linear", "OutCubic", "InCubic", "OutBack"], _config.ANIMATION_EASING, v => SetConfig(() => _config.ANIMATION_EASING = v));
         _updateInterval = CreateIntBox(_config.UPDATE_INTERVAL_MS, v => SetConfig(() => _config.UPDATE_INTERVAL_MS = v));
-        AddSection(panel, "Transicao");
-        AddRow(panel, "Animacao curva", _animationEasing);
-        AddRow(panel, "Atualizacao ms", _updateInterval);
+        AddSection(panel, T("Transition"));
+        AddRow(panel, T("AnimationCurve"), _animationEasing);
+        AddRow(panel, T("UpdateMs"), _updateInterval);
 
         _fontOutlineWidth = CreateIntBox(_config.FONT_OUTLINE_WIDTH, v => SetConfig(() => _config.FONT_OUTLINE_WIDTH = v));
         _fontPaddingX = CreateIntBox(_config.FONT_PADDING_X, v => SetConfig(() => _config.FONT_PADDING_X = v));
         _fontPaddingY = CreateIntBox(_config.FONT_PADDING_Y, v => SetConfig(() => _config.FONT_PADDING_Y = v));
         _fontOffsetX = CreateIntBox(_config.FONT_OFFSET_X, v => SetConfig(() => _config.FONT_OFFSET_X = v));
         _fontOffsetY = CreateIntBox(_config.FONT_OFFSET_Y, v => SetConfig(() => _config.FONT_OFFSET_Y = v));
-        AddSection(panel, "Fonte");
-        AddRow(panel, "Largura contorno", _fontOutlineWidth);
-        AddRow(panel, "Padding X", _fontPaddingX);
-        AddRow(panel, "Padding Y", _fontPaddingY);
-        AddRow(panel, "Offset X", _fontOffsetX);
-        AddRow(panel, "Offset Y", _fontOffsetY);
+        AddSection(panel, T("Font"));
+        AddRow(panel, T("OutlineWidth"), _fontOutlineWidth);
+        AddRow(panel, T("PaddingX"), _fontPaddingX);
+        AddRow(panel, T("PaddingY"), _fontPaddingY);
+        AddRow(panel, T("OffsetX"), _fontOffsetX);
+        AddRow(panel, T("OffsetY"), _fontOffsetY);
 
-        (_windowOpacity, _windowOpacityValue) = CreateOpacitySlider(_config.WINDOW_OPACITY, v => SetConfig(() => _config.WINDOW_OPACITY = v));
         _clickThrough = CreateCheck(_config.CLICK_THROUGH, v => SetConfig(() => _config.CLICK_THROUGH = v));
         _alwaysOnTop = CreateCheck(_config.ALWAYS_ON_TOP, v => SetAlwaysOnTop(v));
         _alwaysOnBottom = CreateCheck(_config.ALWAYS_ON_BOTTOM, v => SetAlwaysOnBottom(v));
         _showInTaskbar = CreateCheck(_config.SHOW_IN_TASKBAR, v => SetConfig(() => _config.SHOW_IN_TASKBAR = v));
         _startWithWindows = CreateCheck(_config.START_WITH_WINDOWS, v => SetConfig(() => _config.START_WITH_WINDOWS = v));
-        AddSection(panel, "Janela");
-        AddRow(panel, "Opacidade global", BuildSliderControl(_windowOpacity, _windowOpacityValue));
-        AddRow(panel, "Ignorar clique", _clickThrough);
-        AddRow(panel, "Sempre acima", _alwaysOnTop);
-        AddRow(panel, "Sempre abaixo", _alwaysOnBottom);
-        AddRow(panel, "Na barra de tarefas", _showInTaskbar);
-        AddRow(panel, "Iniciar com Windows", _startWithWindows);
+        _keepInTray = CreateCheck(_config.KEEP_EDITOR_IN_TRAY, v => SetConfig(() => _config.KEEP_EDITOR_IN_TRAY = v));
+        AddSection(panel, T("Window"));
+        AddRow(panel, T("ClickThrough"), _clickThrough);
+        AddRow(panel, T("AlwaysOnTop"), _alwaysOnTop);
+        AddRow(panel, T("AlwaysOnBottom"), _alwaysOnBottom);
+        AddRow(panel, T("Taskbar"), _showInTaskbar);
+        AddRow(panel, T("StartWithWindows"), _startWithWindows);
+        AddRow(panel, T("KeepInTray"), _keepInTray);
     }
 
     private void BuildItemTab(StackPanel panel)
@@ -293,7 +315,7 @@ public sealed class EditorWindow : Window
         allHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LabelWidth) });
         allHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         allHeader.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ApplyColumnWidth) });
-        var allText = new TextBlock { Text = "Todos", HorizontalAlignment = WpfHorizontalAlignment.Right, FontWeight = FontWeights.SemiBold };
+        var allText = new TextBlock { Text = T("All"), HorizontalAlignment = WpfHorizontalAlignment.Right, FontWeight = FontWeights.SemiBold };
         Grid.SetColumn(allText, 2);
         allHeader.Children.Add(allText);
         panel.Children.Add(allHeader);
@@ -302,7 +324,7 @@ public sealed class EditorWindow : Window
         _slotSize = CreateIntBox(1, SetSlotSize);
         _slotBold = CreateCheck(false, SetSlotBold);
         _slotItalic = CreateCheck(false, SetSlotItalic);
-        _slotColor = CreateColorButton("#FFFFFF", "Cor do item", SetSlotColor);
+        _slotColor = CreateColorButton("#FFFFFF", T("ItemColor"), SetSlotColor);
         _slotRenderMode = CreateCombo(["filled", "outline", "filled_outline"], "filled", SetSlotRenderMode);
         (_slotOpacity, _slotOpacityValue) = CreateOpacitySlider(1.0, SetSlotOpacity);
         _slotAnimationDuration = CreateIntBox(130, SetSlotAnimationDuration);
@@ -313,20 +335,20 @@ public sealed class EditorWindow : Window
         _slotPosX = CreateIntBox(0, v => SetSlotPositionOffset("x", v));
         _slotPosY = CreateIntBox(0, v => SetSlotPositionOffset("y", v));
 
-        AddItemRow(panel, "font", "Fonte", _slotFont);
-        AddItemRow(panel, "size", "Tamanho texto", _slotSize);
-        AddItemRow(panel, "bold", "Negrito", _slotBold);
-        AddItemRow(panel, "italic", "Italico", _slotItalic);
-        AddItemRow(panel, "color", "Cor", _slotColor);
-        AddItemRow(panel, "render", "Modo render", _slotRenderMode);
-        AddItemRow(panel, "opacity", "Opacidade", BuildSliderControl(_slotOpacity, _slotOpacityValue));
-        AddItemRow(panel, "animation", "Animacao ms", _slotAnimationDuration);
-        AddItemRow(panel, "width", "Largura", _slotWidth);
-        AddItemRow(panel, "height", "Altura", _slotHeight);
-        AddItemRow(panel, "text_x", "Texto X", _slotTextX);
-        AddItemRow(panel, "text_y", "Texto Y", _slotTextY);
-        AddItemRow(panel, "pos_x", "Posicao X", _slotPosX);
-        AddItemRow(panel, "pos_y", "Posicao Y", _slotPosY);
+        AddItemRow(panel, "font", T("Font"), _slotFont);
+        AddItemRow(panel, "size", T("TextSize"), _slotSize);
+        AddItemRow(panel, "bold", T("Bold"), _slotBold);
+        AddItemRow(panel, "italic", T("Italic"), _slotItalic);
+        AddItemRow(panel, "color", T("Color"), _slotColor);
+        AddItemRow(panel, "render", T("RenderMode"), _slotRenderMode);
+        AddItemRow(panel, "opacity", T("Opacity"), BuildSliderControl(_slotOpacity, _slotOpacityValue));
+        AddItemRow(panel, "animation", T("AnimationMs"), _slotAnimationDuration);
+        AddItemRow(panel, "width", T("Width"), _slotWidth);
+        AddItemRow(panel, "height", T("Height"), _slotHeight);
+        AddItemRow(panel, "text_x", T("TextX"), _slotTextX);
+        AddItemRow(panel, "text_y", T("TextY"), _slotTextY);
+        AddItemRow(panel, "pos_x", T("PositionX"), _slotPosX);
+        AddItemRow(panel, "pos_y", T("PositionY"), _slotPosY);
     }
 
     private void AddSection(StackPanel parent, string title)
@@ -562,6 +584,45 @@ public sealed class EditorWindow : Window
             }
         };
         return combo;
+    }
+
+    private ComboBox CreateLanguageCombo()
+    {
+        var items = new[]
+        {
+            new LanguageOption("system", T("SystemLanguage")),
+            new LanguageOption("en", T("English")),
+            new LanguageOption("pt-BR", T("Portuguese")),
+        };
+        var combo = new ComboBox
+        {
+            ItemsSource = items,
+            DisplayMemberPath = nameof(LanguageOption.Label),
+            SelectedValuePath = nameof(LanguageOption.Value),
+            SelectedValue = LocalizationService.NormalizeLanguage(_config.LANGUAGE),
+            IsEditable = false,
+        };
+        combo.SelectionChanged += (_, _) =>
+        {
+            if (_loading || combo.SelectedValue is not string value)
+            {
+                return;
+            }
+
+            SetConfig(() => _config.LANGUAGE = value);
+            RebuildInterface();
+        };
+        return combo;
+    }
+
+    private void RebuildInterface()
+    {
+        StopPreview();
+        _language = LocalizationService.ResolveLanguage(_config.LANGUAGE);
+        Content = BuildUi();
+        ApplyTheme();
+        RefreshAllControls();
+        ScheduleLivePreview();
     }
 
     private ComboBox CreateFontCombo(string value, Action<string> callback)
@@ -1005,12 +1066,13 @@ public sealed class EditorWindow : Window
         SetText(_fontPaddingY, _config.FONT_PADDING_Y);
         SetText(_fontOffsetX, _config.FONT_OFFSET_X);
         SetText(_fontOffsetY, _config.FONT_OFFSET_Y);
-        SetSlider(_windowOpacity, _windowOpacityValue, _config.WINDOW_OPACITY);
         _clickThrough.IsChecked = _config.CLICK_THROUGH;
         _alwaysOnTop.IsChecked = _config.ALWAYS_ON_TOP;
         _alwaysOnBottom.IsChecked = _config.ALWAYS_ON_BOTTOM;
         _showInTaskbar.IsChecked = _config.SHOW_IN_TASKBAR;
         _startWithWindows.IsChecked = _config.START_WITH_WINDOWS;
+        _keepInTray.IsChecked = _config.KEEP_EDITOR_IN_TRAY;
+        _languageCombo.SelectedValue = LocalizationService.NormalizeLanguage(_config.LANGUAGE);
         _loading = false;
 
         RefreshSelectedControls();
@@ -1019,6 +1081,22 @@ public sealed class EditorWindow : Window
     private void SystemEvents_UserPreferenceChanged(object sender, Microsoft.Win32.UserPreferenceChangedEventArgs e)
     {
         Dispatcher.BeginInvoke(ApplyTheme);
+    }
+
+    private void EditorWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_config.KEEP_EDITOR_IN_TRAY && !_allowClose)
+        {
+            e.Cancel = true;
+            StopPreview();
+            ConfigService.ClearEditorActive(_configPath);
+            RestoreHiddenClockWindows();
+            Hide();
+            EnsureTrayIcon();
+            return;
+        }
+
+        StopPreview();
     }
 
     private void ApplyTheme()
@@ -1043,7 +1121,8 @@ public sealed class EditorWindow : Window
     {
         _loading = true;
         var index = Array.IndexOf(ClockConfig.SlotIds, _selectedSlot) + 1;
-        _selectedLabel.Text = $"{index}/{ClockConfig.SlotIds.Length} - {ClockConfig.SlotLabels.GetValueOrDefault(_selectedSlot, _selectedSlot)}";
+        var labels = LocalizationService.SlotLabels(_config.LANGUAGE);
+        _selectedLabel.Text = $"{index}/{ClockConfig.SlotIds.Length} - {labels.GetValueOrDefault(_selectedSlot, _selectedSlot)}";
         _slotFont.Text = _config.SLOT_FONT_FAMILIES[_selectedSlot];
         SetText(_slotSize, _config.SLOT_FONT_PIXEL_SIZES[_selectedSlot]);
         _slotBold.IsChecked = _config.SLOT_FONT_BOLD[_selectedSlot];
@@ -1108,12 +1187,12 @@ public sealed class EditorWindow : Window
         {
             ConfigService.SaveConfig(_configPath, _config, includePreview: false);
             StartupService.SyncWindowsStartupRegistration(_config, _configPath);
-            _status.Text = $"Aplicado em {DateTime.Now:HH:mm:ss}";
+            _status.Text = string.Format(CultureInfo.CurrentCulture, T("AppliedAt"), DateTime.Now.ToString("HH:mm:ss", CultureInfo.CurrentCulture));
         }
         catch (Exception ex)
         {
             ConfigService.LogError(ex);
-            Forms.MessageBox.Show(ex.Message, "Erro ao aplicar", Forms.MessageBoxButtons.OK, Forms.MessageBoxIcon.Error);
+            Forms.MessageBox.Show(ex.Message, T("ApplyErrorTitle"), Forms.MessageBoxButtons.OK, Forms.MessageBoxIcon.Error);
         }
     }
 
@@ -1137,12 +1216,12 @@ public sealed class EditorWindow : Window
             preview.PREVIEW_SHOW_SELECTION = true;
             ConfigService.SaveConfig(_previewPath, preview, includePreview: true);
             EnsurePreviewRunning();
-            _status.Text = "Previa atualizada";
+            _status.Text = T("PreviewUpdated");
         }
         catch (Exception ex)
         {
             ConfigService.LogError(ex);
-            _status.Text = "Erro na previa";
+            _status.Text = T("PreviewError");
         }
     }
 
@@ -1202,4 +1281,120 @@ public sealed class EditorWindow : Window
             // Temporary preview cleanup is best-effort.
         }
     }
+
+    private void EnsureTrayIcon()
+    {
+        if (_trayIcon is not null)
+        {
+            _trayIcon.Visible = true;
+            return;
+        }
+
+        var menu = new Forms.ContextMenuStrip();
+        menu.Items.Add(T("ShowEditor"), null, (_, _) => ShowFromTray());
+        menu.Items.Add(T("Exit"), null, (_, _) => ExitFromTray());
+        _trayIcon = new Forms.NotifyIcon
+        {
+            Text = T("TrayText"),
+            Icon = DrawingIcon.ExtractAssociatedIcon(StartupService.ResolveExecutablePath()) ?? System.Drawing.SystemIcons.Application,
+            ContextMenuStrip = menu,
+            Visible = true,
+        };
+        _trayIcon.DoubleClick += (_, _) => ShowFromTray();
+    }
+
+    private void ShowFromTray()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+        ConfigService.MarkEditorActive(_configPath);
+        HideExistingClockWindows();
+        ScheduleLivePreview();
+    }
+
+    private void ExitFromTray()
+    {
+        _allowClose = true;
+        Close();
+    }
+
+    private void DisposeTrayIcon()
+    {
+        if (_trayIcon is null)
+        {
+            return;
+        }
+
+        _trayIcon.Visible = false;
+        _trayIcon.Dispose();
+        _trayIcon = null;
+    }
+
+    private void HideExistingClockWindows()
+    {
+        var currentPid = Environment.ProcessId;
+        var currentPath = Path.GetFullPath(Environment.ProcessPath ?? StartupService.ResolveExecutablePath());
+        var currentProcessName = Process.GetCurrentProcess().ProcessName;
+        _hiddenClockWindows.Clear();
+        Win32.EnumWindows((hwnd, _) =>
+        {
+            if (!Win32.IsWindowVisible(hwnd))
+            {
+                return true;
+            }
+
+            Win32.GetWindowThreadProcessId(hwnd, out var pid);
+            if (pid == 0 || pid == currentPid)
+            {
+                return true;
+            }
+
+            try
+            {
+                using var process = Process.GetProcessById((int)pid);
+                var sameAppName = string.Equals(process.ProcessName, currentProcessName, StringComparison.OrdinalIgnoreCase);
+                var sameExecutable = false;
+                try
+                {
+                    var path = process.MainModule?.FileName;
+                    sameExecutable = !string.IsNullOrWhiteSpace(path) &&
+                        string.Equals(Path.GetFullPath(path), currentPath, StringComparison.OrdinalIgnoreCase);
+                }
+                catch
+                {
+                    // Process path access can fail even for same-user windows. The app name check still covers our clock.
+                }
+
+                if (sameExecutable || sameAppName)
+                {
+                    Win32.ShowWindow(hwnd, Win32.SW_HIDE);
+                    _hiddenClockWindows.Add(hwnd);
+                }
+            }
+            catch
+            {
+                // Best-effort only. Some process paths may be inaccessible.
+            }
+
+            return true;
+        }, IntPtr.Zero);
+    }
+
+    private void RestoreHiddenClockWindows()
+    {
+        foreach (var hwnd in _hiddenClockWindows)
+        {
+            Win32.ShowWindow(hwnd, Win32.SW_SHOWNA);
+        }
+
+        _hiddenClockWindows.Clear();
+    }
+
+    private string T(string key)
+    {
+        return LocalizationService.Get(_config.LANGUAGE, key);
+    }
+
+    private sealed record LanguageOption(string Value, string Label);
 }

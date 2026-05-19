@@ -7,6 +7,7 @@ public sealed class ClockConfig
     public int CENTER_X { get; set; } = 960;
     public int CENTER_Y { get; set; } = 500;
     public int SCREEN_INDEX { get; set; } = 0;
+    public string LANGUAGE { get; set; } = "system";
     public bool SHOW_SECONDS { get; set; } = true;
     public bool SHOW_SEPARATORS { get; set; } = false;
     public string LAYOUT_MODE { get; set; } = "vertical";
@@ -29,8 +30,6 @@ public sealed class ClockConfig
     public string FONT_FAMILY { get; set; } = "Segoe UI";
     public string FONT_FALLBACK_FAMILY { get; set; } = "Segoe UI";
     public string FONT_COLOR { get; set; } = "#C1C1C1";
-    public bool FONT_BOLD { get; set; } = false;
-    public bool FONT_ITALIC { get; set; } = false;
     public string FONT_RENDER_MODE { get; set; } = "filled";
     public int FONT_OUTLINE_WIDTH { get; set; } = 1;
     public int FONT_PADDING_X { get; set; } = 0;
@@ -53,15 +52,14 @@ public sealed class ClockConfig
     public Dictionary<string, PointOffset> SLOT_TEXT_OFFSETS { get; set; } = new();
     public Dictionary<string, PointOffset> SLOT_POSITION_OFFSETS { get; set; } = new();
 
-    public int ANIMATION_DURATION_MS { get; set; } = 130;
     public string ANIMATION_EASING { get; set; } = "InOutQuad";
     public int UPDATE_INTERVAL_MS { get; set; } = 1000;
-    public double WINDOW_OPACITY { get; set; } = 1.0;
     public bool CLICK_THROUGH { get; set; } = true;
     public bool ALWAYS_ON_TOP { get; set; } = false;
     public bool ALWAYS_ON_BOTTOM { get; set; } = true;
     public bool SHOW_IN_TASKBAR { get; set; } = false;
     public bool START_WITH_WINDOWS { get; set; } = true;
+    public bool KEEP_EDITOR_IN_TRAY { get; set; } = false;
     public string WINDOWS_STARTUP_NAME { get; set; } = "Desktop Clock";
     public int CONFIG_RELOAD_INTERVAL_MS { get; set; } = 250;
 
@@ -81,18 +79,6 @@ public sealed class ClockConfig
         "second_ones",
     ];
 
-    public static readonly IReadOnlyDictionary<string, string> SlotLabels = new Dictionary<string, string>
-    {
-        ["hour_tens"] = "Primeiro digito da hora",
-        ["hour_ones"] = "Segundo digito da hora",
-        ["separator_1"] = "Separador hora/minuto",
-        ["minute_tens"] = "Primeiro digito do minuto",
-        ["minute_ones"] = "Segundo digito do minuto",
-        ["separator_2"] = "Separador minuto/segundo",
-        ["second_tens"] = "Primeiro digito do segundo",
-        ["second_ones"] = "Segundo digito do segundo",
-    };
-
     public static readonly ClockGroup[] Groups =
     [
         new("hour", ["hour_tens", "hour_ones"]),
@@ -107,6 +93,7 @@ public sealed class ClockConfig
             CENTER_X = 960,
             CENTER_Y = 500,
             SCREEN_INDEX = 0,
+            LANGUAGE = "system",
             SHOW_SECONDS = true,
             SHOW_SEPARATORS = false,
             LAYOUT_MODE = "vertical",
@@ -123,15 +110,14 @@ public sealed class ClockConfig
             FONT_COLOR = "#C1C1C1",
             FONT_RENDER_MODE = "filled",
             FONT_PIXEL_SIZE = 60,
-            ANIMATION_DURATION_MS = 130,
             ANIMATION_EASING = "InOutQuad",
             UPDATE_INTERVAL_MS = 1000,
-            WINDOW_OPACITY = 1.0,
             CLICK_THROUGH = true,
             ALWAYS_ON_TOP = false,
             ALWAYS_ON_BOTTOM = true,
             SHOW_IN_TASKBAR = false,
             START_WITH_WINDOWS = true,
+            KEEP_EDITOR_IN_TRAY = false,
             WINDOWS_STARTUP_NAME = "Desktop Clock",
             CONFIG_RELOAD_INTERVAL_MS = 250,
         };

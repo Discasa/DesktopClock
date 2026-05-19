@@ -183,7 +183,9 @@ public static class ThemeService
                 }
                 break;
             case TextBlock text:
-                text.Foreground = text.Text.Contains("Previa", StringComparison.OrdinalIgnoreCase) ? mutedBrush : textBrush;
+                text.Foreground = text.Tag is string statusTag && string.Equals(statusTag, "muted", StringComparison.OrdinalIgnoreCase)
+                    ? mutedBrush
+                    : textBrush;
                 break;
             case WpfLabel label:
                 label.Foreground = textBrush;

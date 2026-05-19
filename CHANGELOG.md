@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.4 - 2026-05-19
+
+- Removed global opacity and kept opacity as a per-item setting.
+- Added editor language selection with English, Portuguese, and system-default modes.
+- Localized the editor interface and kept installer/uninstaller language detection tied to the Windows UI language.
+- Added an option to keep the editor in the tray when closed.
+- Hide the regular clock window while the editor preview is active.
+
 ## 1.0.3 - 2026-05-19
 
 - Made the editor dark theme more consistent across item labels, sliders, and themed controls.

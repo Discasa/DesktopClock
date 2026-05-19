@@ -31,10 +31,12 @@ public sealed class ClockWindow : Window
     private readonly Dictionary<string, string> _currentValuesBySlot = new();
     private readonly Dictionary<string, Canvas> _slotCanvases = new();
     private readonly List<SlotLayout> _slots = [];
+    private readonly List<IntPtr> _windowsHiddenByEditor = [];
 
     private ClockConfig _config;
     private DateTime? _configMtime;
     private IntPtr _hwnd;
+    private bool _hiddenByEditor;
 
     public ClockWindow(string configPath, bool previewMode)
     {
@@ -72,6 +74,7 @@ public sealed class ClockWindow : Window
             UpdateClock(force: true, animate: false);
             ScheduleClockTimer();
             ScheduleReloadTimer();
+            SyncEditorVisibility();
         });
     }
 
@@ -91,6 +94,7 @@ public sealed class ClockWindow : Window
 
     private void ReloadConfigIfNeeded()
     {
+        SyncEditorVisibility();
         var current = ConfigService.GetLastWriteTimeUtc(_configPath);
         if (current != _configMtime)
         {
@@ -101,6 +105,66 @@ public sealed class ClockWindow : Window
         }
 
         ScheduleReloadTimer();
+    }
+
+    private void SyncEditorVisibility()
+    {
+        if (_previewMode)
+        {
+            return;
+        }
+
+        var editorActive = ConfigService.IsEditorActive(_configPath);
+        if (editorActive)
+        {
+            _hiddenByEditor = true;
+            HideProcessWindows();
+            Hide();
+            return;
+        }
+
+        if (!editorActive && _hiddenByEditor)
+        {
+            _hiddenByEditor = false;
+            Show();
+            RestoreProcessWindows();
+            ApplyWindowStyles();
+            ApplyZOrder();
+        }
+    }
+
+    private void HideProcessWindows()
+    {
+        var currentPid = Environment.ProcessId;
+        Win32.EnumWindows((hwnd, _) =>
+        {
+            if (!Win32.IsWindowVisible(hwnd))
+            {
+                return true;
+            }
+
+            Win32.GetWindowThreadProcessId(hwnd, out var pid);
+            if (pid == currentPid)
+            {
+                Win32.ShowWindow(hwnd, Win32.SW_HIDE);
+                if (!_windowsHiddenByEditor.Contains(hwnd))
+                {
+                    _windowsHiddenByEditor.Add(hwnd);
+                }
+            }
+
+            return true;
+        }, IntPtr.Zero);
+    }
+
+    private void RestoreProcessWindows()
+    {
+        foreach (var hwnd in _windowsHiddenByEditor)
+        {
+            Win32.ShowWindow(hwnd, Win32.SW_SHOWNA);
+        }
+
+        _windowsHiddenByEditor.Clear();
     }
 
     private void ApplyConfig(bool initial)
@@ -422,8 +486,8 @@ public sealed class ClockWindow : Window
         var fontFamily = new MediaFontFamily(FontFamilyFor(slot));
         var typeface = new Typeface(
             fontFamily,
-            _config.SLOT_FONT_ITALIC.GetValueOrDefault(slot.Id, _config.FONT_ITALIC) ? FontStyles.Italic : FontStyles.Normal,
-            _config.SLOT_FONT_BOLD.GetValueOrDefault(slot.Id, _config.FONT_BOLD) ? FontWeights.Bold : FontWeights.Normal,
+            _config.SLOT_FONT_ITALIC.GetValueOrDefault(slot.Id, false) ? FontStyles.Italic : FontStyles.Normal,
+            _config.SLOT_FONT_BOLD.GetValueOrDefault(slot.Id, false) ? FontWeights.Bold : FontWeights.Normal,
             FontStretches.Normal);
         var dpi = VisualTreeHelper.GetDpi(this);
         var formatted = new FormattedText(
@@ -537,7 +601,7 @@ public sealed class ClockWindow : Window
     private double EffectiveOpacity(SlotLayout slot)
     {
         var slotOpacity = _config.SLOT_OPACITIES.GetValueOrDefault(slot.Id, 1.0);
-        return ConfigService.Clamp(_config.WINDOW_OPACITY * slotOpacity, 0.0, 1.0);
+        return ConfigService.Clamp(slotOpacity, 0.0, 1.0);
     }
 
     private double FontSizeFor(SlotLayout slot)
@@ -566,7 +630,7 @@ public sealed class ClockWindow : Window
     private int AnimationDurationFor(SlotLayout slot)
     {
         return ConfigService.Clamp(
-            _config.SLOT_ANIMATION_DURATIONS_MS.GetValueOrDefault(slot.Id, _config.ANIMATION_DURATION_MS),
+            _config.SLOT_ANIMATION_DURATIONS_MS.GetValueOrDefault(slot.Id, 130),
             0,
             5000);
     }

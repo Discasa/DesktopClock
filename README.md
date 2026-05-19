@@ -36,6 +36,7 @@
 - Horizontal, vertical, filled, outline, and transparent styles.
 - Per-number font, size, opacity, color, position, outline, bold, italic, and animation control.
 - Simple editor with live preview.
+- English and Portuguese interface with system-language detection.
 - Follows Windows light and dark theme.
 - Installs for your user and updates automatically.
 

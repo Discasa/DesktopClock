@@ -35,13 +35,19 @@ The old adaptive wallpaper color and background inversion settings were removed.
 
 The editor has two tabs:
 
-- `Geral`: position, time layout, shared spacing, shared animation curve, update
-  interval, shared outline/padding/offset values, and window behavior.
+- `Geral`: language, position, time layout, shared spacing, shared animation
+  curve, update interval, shared outline/padding/offset values, and window
+  behavior.
 - `Item`: per-slot font, size, bold, italic, color, render mode, opacity,
   animation duration, width, height, text offset, and position offset.
 
-Opacity controls are shown as 0-100% sliders. Internally they are stored as
-normalized `0.0` to `1.0` values in the JSON.
+Per-item opacity controls are shown as 0-100% sliders. Internally they are
+stored as normalized `0.0` to `1.0` values in the JSON. There is no separate
+global opacity control; checking `Todos` beside item opacity applies one opacity
+value to every item.
+
+The editor supports `system`, `en`, and `pt-BR` language modes. `system` uses
+the current Windows UI language.
 
 The `Todos` checkbox beside each item setting applies the selected item's value
 to every slot.
@@ -53,6 +59,8 @@ Removed editor clutter:
   already has explicit per-slot controls.
 - Global bold, italic, and animation duration controls, because these are now
   configured per item.
+- Global opacity, because the per-item opacity control with `Todos` covers the
+  same workflow without duplicating state.
 - Adaptive/invert color controls, because that feature was intentionally removed.
 
 ## Installer
